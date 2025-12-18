@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { jsPDF } from "jspdf";
@@ -702,7 +701,7 @@ const ManageStudents = ({ user }: { user: User }) => {
         <h2 className="text-xl font-bold">Student Roster</h2>
         <Button onClick={() => setModalOpen(true)}><Plus size={18} /> Enroll Student</Button>
       </div>
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-500 border-b">
             <tr><th className="p-4">Name</th><th className="p-4">Index No.</th><th className="p-4">Grade</th></tr>
@@ -1162,7 +1161,7 @@ const RegisterSchool = ({ setView }: any) => {
       return;
     }
 
-    const u = db.registerSchool(form);
+    db.registerSchool(form);
     alert('Registration Successful! Please login.');
     setView('login');
   };
@@ -1535,5 +1534,8 @@ const App = () => {
   }
 };
 
-const root = createRoot(document.getElementById('root')!);
-root.render(<App />);
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
