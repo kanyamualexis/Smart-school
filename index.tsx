@@ -353,6 +353,14 @@ const LandingPage = ({ setView }: any) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  // EDITABLE STATS - Change these values to update the stats bar
+  const statsConfig = {
+    schools: "10,000+",
+    students: "2M+",
+    teachers: "150K+",
+    uptime: "99.9%"
+  };
+
   const slides = [
     {
       image: "https://images.unsplash.com/photo-1577896336495-97e3355f65f3?auto=format&fit=crop&q=80&w=2000",
@@ -482,7 +490,7 @@ const LandingPage = ({ setView }: any) => {
       </header>
 
       {/* Floating CTA Strip */}
-      <div className="relative z-20 -mt-16 px-4 mb-20">
+      <div className="relative z-20 -mt-16 px-4">
         <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 border border-gray-100">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">Ready to Transform Your School?</h3>
@@ -494,6 +502,28 @@ const LandingPage = ({ setView }: any) => {
           </div>
         </div>
       </div>
+
+      {/* Impact Stats Bar (Matching Screenshot) */}
+      <section className="bg-brand-600 py-16 text-white mt-12 mb-12">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+          <div className="text-center">
+            <div className="text-4xl md:text-6xl font-bold mb-2 tracking-tight">{statsConfig.schools}</div>
+            <div className="text-xs md:text-sm font-medium opacity-90 uppercase tracking-widest">Schools Registered</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl md:text-6xl font-bold mb-2 tracking-tight">{statsConfig.students}</div>
+            <div className="text-xs md:text-sm font-medium opacity-90 uppercase tracking-widest">Students Managed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl md:text-6xl font-bold mb-2 tracking-tight">{statsConfig.teachers}</div>
+            <div className="text-xs md:text-sm font-medium opacity-90 uppercase tracking-widest">Teachers Using</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl md:text-6xl font-bold mb-2 tracking-tight">{statsConfig.uptime}</div>
+            <div className="text-xs md:text-sm font-medium opacity-90 uppercase tracking-widest">Uptime</div>
+          </div>
+        </div>
+      </section>
 
       {/* Features Grid */}
       <section id="features" className="py-12 max-w-7xl mx-auto px-4">
