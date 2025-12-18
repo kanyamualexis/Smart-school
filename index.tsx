@@ -90,7 +90,7 @@ class MockDB {
       
       this.set<User>('users', [
         // Platform Admin
-        { id: 'u_p_admin', email: 'admin@schoolflow.com', full_name: 'Super Admin', role: 'platform_admin', school_id: '', password: 'admin123' },
+        { id: 'u_p_admin', email: 'admin@smartschoolflow.com', full_name: 'Super Admin', role: 'platform_admin', school_id: '', password: 'admin123' },
         // Springfield Staff
         { id: 'u_head', email: 'headteacher@springfield.edu', full_name: 'Principal Skinner', role: 'school_admin', school_id: sch1, password: 'head123' },
         { id: 'u_teach', email: 'teacher@springfield.edu', full_name: 'Edna Krabappel', role: 'teacher', school_id: sch1, password: 'teacher123' },
@@ -250,6 +250,7 @@ const Input = ({ label, ...props }: any) => (
 const Card = ({ title, value, icon: Icon, subtext, color = "bg-brand-50 text-brand-600" }: any) => (
   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between mb-4">
+      {/* title strings like SchoolFlow would be here if any, checking sub-components too */}
       <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</h3>
       {Icon && <div className={`p-2 rounded-lg ${color}`}><Icon size={20} /></div>}
     </div>
@@ -316,7 +317,7 @@ const LandingPage = ({ setView }: any) => {
       <nav className="sticky top-0 bg-white/95 backdrop-blur z-50 border-b border-gray-100 shadow-sm">
         <div className="flex justify-between items-center px-4 md:px-8 py-4 max-w-7xl mx-auto">
           <div className="font-bold text-2xl text-brand-600 flex items-center gap-2 cursor-pointer" onClick={() => setView('landing')}>
-            <School className="fill-brand-600 text-white" /> SchoolFlow
+            <School className="fill-brand-600 text-white" /> Smart School Flow
           </div>
           
           {/* Desktop Menu */}
@@ -399,7 +400,7 @@ const LandingPage = ({ setView }: any) => {
         <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 border border-gray-100">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">Ready to Transform Your School?</h3>
-            <p className="text-gray-500">Join thousands of schools already using SchoolFlow.</p>
+            <p className="text-gray-500">Join thousands of schools already using Smart School Flow.</p>
           </div>
           <div className="flex gap-4 w-full md:w-auto">
             <Button onClick={() => setView('register')} className="flex-1 md:flex-none">Start Free Trial</Button>
@@ -442,7 +443,7 @@ const LandingPage = ({ setView }: any) => {
             <Play size={14} className="fill-current" /> Quick Demo
           </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-6">See How Easy Registration Is</h2>
-          <p className="text-gray-600 mb-12 max-w-2xl mx-auto">Watch our quick tutorial showing how schools can register and get started with SchoolFlow in minutes.</p>
+          <p className="text-gray-600 mb-12 max-w-2xl mx-auto">Watch our quick tutorial showing how schools can register and get started with Smart School Flow in minutes.</p>
           
           <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black group border-4 border-white">
             {!isPlaying ? (
@@ -488,7 +489,7 @@ const LandingPage = ({ setView }: any) => {
         </div>
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { name: "Sarah Johnson", role: "Principal, Springfield High", text: "SchoolFlow transformed our administrative processes. We saved countless hours and improved parent communication.", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150" },
+            { name: "Sarah Johnson", role: "Principal, Springfield High", text: "Smart School Flow transformed our administrative processes. We saved countless hours and improved parent communication.", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150" },
             { name: "Michael Chen", role: "IT Director, Riverside Academy", text: "The implementation was smooth and the platform is intuitive. Our teachers adapted quickly and love the new system.", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150" },
             { name: "Emily Rodriguez", role: "Teacher, Oakwood School", text: "Managing attendance and grades has never been easier. The mobile app lets me update records instantly.", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150" }
           ].map((t, i) => (
@@ -518,7 +519,7 @@ const LandingPage = ({ setView }: any) => {
            
            <div className="grid md:grid-cols-3 gap-6">
              {[
-               { icon: Mail, title: "Email Us", val: "support@schoolflow.com" },
+               { icon: Mail, title: "Email Us", val: "support@smartschoolflow.com" },
                { icon: Phone, title: "Call Us", val: "+1 (555) 123-4567" },
                { icon: MessageCircle, title: "WhatsApp", val: "+15551234567" }
              ].map((h, i) => (
@@ -537,8 +538,8 @@ const LandingPage = ({ setView }: any) => {
       {/* Main Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 text-white font-bold text-xl"><School className="text-brand-500" /> SchoolFlow</div>
-          <div className="text-sm">© 2024 SchoolFlow. All rights reserved.</div>
+          <div className="flex items-center gap-2 text-white font-bold text-xl"><School className="text-brand-500" /> Smart School Flow</div>
+          <div className="text-sm">© 2024 Smart School Flow. All rights reserved.</div>
           <div className="flex gap-6 text-sm font-medium">
             <a href="#" className="hover:text-white">Privacy Policy</a>
             <a href="#" className="hover:text-white">Terms of Service</a>
@@ -600,7 +601,7 @@ const TestimonialsPage = ({ setView }: any) => (
       <h1 className="text-4xl font-bold text-center mb-16">Trusted by Top Schools</h1>
       <div className="grid md:grid-cols-3 gap-8">
         {[
-          { name: "Sarah Johnson", role: "Principal", text: "SchoolFlow transformed our administrative processes." },
+          { name: "Sarah Johnson", role: "Principal", text: "Smart School Flow transformed our administrative processes." },
           { name: "Michael Chen", role: "IT Director", text: "The implementation was smooth and the platform is intuitive." },
           { name: "Emily Rodriguez", role: "Teacher", text: "Managing attendance and grades has never been easier." }
         ].map((t, i) => (
@@ -912,7 +913,7 @@ const ResultCheckPage = ({ setView }: any) => {
               <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center shadow-md">
                 <School className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900 hidden md:block">SchoolFlow</span>
+              <span className="text-xl font-bold text-gray-900 hidden md:block">Smart School Flow</span>
             </div>
           </div>
         </div>
@@ -1177,10 +1178,10 @@ const RegisterSchool = ({ setView }: any) => {
       {/* Header */}
       <div className="text-center mb-10">
         <div className="font-bold text-2xl text-brand-600 flex items-center justify-center gap-2 mb-4 cursor-pointer" onClick={() => setView('landing')}>
-          <School size={32} /> SchoolFlow
+          <School size={32} /> Smart School Flow
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Start Your School's Digital Journey</h2>
-        <p className="text-gray-500">Join hundreds of schools transforming their management with SchoolFlow</p>
+        <p className="text-gray-500">Join hundreds of schools transforming their management with Smart School Flow</p>
       </div>
 
       {/* Stepper */}
@@ -1388,14 +1389,14 @@ const AuthPage = ({ setView, setUser }: any) => {
     e.preventDefault();
     const u = db.login(email, pass);
     if(u) { setUser(u); setView('dashboard'); }
-    else alert('Invalid Login. Try admin@schoolflow.com / admin123');
+    else alert('Invalid Login. Try admin@smartschoolflow.com / admin123');
   };
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
       <div className="hidden md:flex flex-col justify-center items-center bg-brand-600 text-white p-12">
         <School size={64} className="mb-6" />
-        <h1 className="text-4xl font-bold mb-4">SchoolFlow</h1>
+        <h1 className="text-4xl font-bold mb-4">Smart School Flow</h1>
         <p className="text-lg text-center opacity-90">Manage your entire institution from one unified dashboard.</p>
       </div>
       <div className="flex items-center justify-center p-8 bg-gray-50">
@@ -1485,7 +1486,7 @@ const Dashboard = ({ user, setUser, setView }: any) => {
     <div className="flex min-h-screen bg-gray-50">
       <aside className="w-64 bg-gray-900 text-gray-300 flex flex-col fixed h-full z-10">
         <div className="p-6 text-white font-bold text-xl flex items-center gap-2 border-b border-gray-800">
-          <School className="text-brand-500" /> SchoolFlow
+          <School className="text-brand-500" /> Smart School Flow
         </div>
         <div className="flex-1 p-4 space-y-2">
           {menu.map(m => (
@@ -1534,5 +1535,8 @@ const App = () => {
   }
 };
 
-const root = createRoot(document.getElementById('root')!);
-root.render(<App />);
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
