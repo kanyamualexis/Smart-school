@@ -381,19 +381,35 @@ const LandingPage = ({ setView }: any) => {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
+  const scrollToSection = (id: string) => {
+    // If not in landing view, switch to it first
+    setView('landing');
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const goToHome = () => {
+    setView('landing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
       <nav className="sticky top-0 bg-white/95 backdrop-blur z-50 border-b border-gray-100 shadow-sm">
         <div className="flex justify-between items-center px-4 md:px-8 py-4 max-w-7xl mx-auto">
-          <div className="font-bold text-2xl text-brand-600 flex items-center gap-2 cursor-pointer" onClick={() => setView('landing')}>
+          <div className="font-bold text-2xl text-brand-600 flex items-center gap-2 cursor-pointer" onClick={goToHome}>
             <School className="fill-brand-600 text-white" /> Smart School Flow
           </div>
           
           {/* Desktop Menu */}
           <div className="hidden md:flex gap-8 items-center text-sm font-medium text-gray-600">
-            <button onClick={() => setView('landing')} className="hover:text-brand-600 transition-colors">Home</button>
-            <button onClick={() => setView('pricing')} className="hover:text-brand-600 transition-colors">Pricing</button>
+            <button onClick={goToHome} className="hover:text-brand-600 transition-colors">Home</button>
+            <button onClick={() => scrollToSection('pricing')} className="hover:text-brand-600 transition-colors">Pricing</button>
             <button onClick={() => setView('testimonials')} className="hover:text-brand-600 transition-colors">Testimonials</button>
             <button onClick={() => setView('result_check')} className="hover:text-brand-600 transition-colors">Check Results</button>
           </div>
@@ -412,8 +428,8 @@ const LandingPage = ({ setView }: any) => {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100 p-4 flex flex-col gap-2 shadow-xl absolute w-full left-0 animate-in slide-in-from-top-5 z-50">
-             <button onClick={() => { setView('landing'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Home</button>
-             <button onClick={() => { setView('pricing'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Pricing</button>
+             <button onClick={() => { goToHome(); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Home</button>
+             <button onClick={() => { scrollToSection('pricing'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Pricing</button>
              <button onClick={() => { setView('testimonials'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Testimonials</button>
              <button onClick={() => { setView('result_check'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Check Results</button>
              <div className="h-px bg-gray-100 my-2" />
@@ -438,7 +454,7 @@ const LandingPage = ({ setView }: any) => {
                 <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-2xl mx-auto leading-relaxed">{s.subtitle}</p>
                 <div className="flex gap-4 justify-center">
                   <Button onClick={() => setView('register')} size="lg" className="rounded-full px-8 bg-brand-600 hover:bg-brand-500 border-none">Start Free Trial</Button>
-                  <Button variant="outline" onClick={() => setView('pricing')} size="lg" className="rounded-full px-8 text-white border-white hover:bg-white/10 hover:text-white">Learn More</Button>
+                  <Button variant="outline" onClick={() => scrollToSection('pricing')} size="lg" className="rounded-full px-8 text-white border-white hover:bg-white/10 hover:text-white">Learn More</Button>
                 </div>
               </div>
             </div>
@@ -480,7 +496,7 @@ const LandingPage = ({ setView }: any) => {
       </div>
 
       {/* Features Grid */}
-      <section className="py-12 max-w-7xl mx-auto px-4">
+      <section id="features" className="py-12 max-w-7xl mx-auto px-4">
         <div className="text-center mb-16">
           <h5 className="text-brand-600 font-bold tracking-widest uppercase text-sm mb-2">Features</h5>
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Everything you need to run your school</h2>
@@ -579,13 +595,15 @@ const LandingPage = ({ setView }: any) => {
       </section>
 
       {/* Pricing Teaser */}
-      <PricingPage setView={setView} embedded={true} />
+      <section id="pricing">
+        <PricingPage setView={setView} embedded={true} />
+      </section>
 
       {/* FAQ Section */}
       <FAQSection />
 
       {/* Help Section */}
-      <section className="bg-brand-600 py-20 text-white">
+      <section id="contact" className="bg-brand-600 py-20 text-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
            <h2 className="text-3xl font-bold mb-2">Need Help?</h2>
            <p className="text-blue-100 mb-12">Our team is here to support you</p>
@@ -608,14 +626,27 @@ const LandingPage = ({ setView }: any) => {
         </div>
       </section>
 
-      {/* Main Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 text-white font-bold text-xl"><School className="text-brand-500" /> Smart School Flow</div>
-          <div className="text-sm">© 2024 Smart School Flow. All rights reserved.</div>
-          <div className="flex gap-6 text-sm font-medium">
-            <a href="#" className="hover:text-white">Privacy Policy</a>
-            <a href="#" className="hover:text-white">Terms of Service</a>
+      {/* Updated Functional Black Footer */}
+      <footer className="bg-[#0b1120] text-gray-400 py-12 border-t border-gray-800/50">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+            <div className="flex items-center gap-2 text-white font-bold text-2xl tracking-tight cursor-pointer" onClick={goToHome}>
+              <School className="text-brand-500 fill-brand-500" /> Smart School Flow
+            </div>
+            <div className="flex flex-wrap justify-center gap-8 text-sm font-medium">
+              <button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">Features</button>
+              <button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Pricing</button>
+              <button onClick={() => scrollToSection('contact')} className="hover:text-white transition-colors">Contact</button>
+              <button onClick={goToHome} className="hover:text-white transition-colors">Privacy</button>
+              <button onClick={goToHome} className="hover:text-white transition-colors">Terms</button>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 my-8"></div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+            <div>© 2025 Smart School Flow. All rights reserved.</div>
+            <div className="flex items-center gap-1">
+              Designed by <span className="text-brand-500 font-bold">Alexis K.</span>
+            </div>
           </div>
         </div>
       </footer>
@@ -1473,7 +1504,7 @@ const AuthPage = ({ setView, setUser }: any) => {
         <p className="text-lg text-center opacity-90">Manage your entire institution from one unified dashboard.</p>
       </div>
       <div className="flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+        <div className="w-full max-md bg-white p-8 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold mb-6">Welcome Back</h2>
           <form onSubmit={login} className="space-y-4">
             <Input label="Email" value={email} onChange={(e:any) => setEmail(e.target.value)} />
