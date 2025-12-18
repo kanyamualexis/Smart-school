@@ -9,7 +9,8 @@ import {
   Menu, X, ChevronRight, ChevronLeft, Bot, FileText,
   CreditCard, Star, Phone, Mail, MessageCircle,
   Calendar, Trash2, Edit, Save, UserPlus,
-  Loader2, Check, Play, Clock, Globe, ArrowLeft
+  Loader2, Check, Play, Clock, Globe, ArrowLeft,
+  ChevronDown, ChevronUp
 } from "lucide-react";
 
 /**
@@ -250,7 +251,6 @@ const Input = ({ label, ...props }: any) => (
 const Card = ({ title, value, icon: Icon, subtext, color = "bg-brand-50 text-brand-600" }: any) => (
   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between mb-4">
-      {/* title strings like SchoolFlow would be here if any, checking sub-components too */}
       <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</h3>
       {Icon && <div className={`p-2 rounded-lg ${color}`}><Icon size={20} /></div>}
     </div>
@@ -273,9 +273,79 @@ const Modal = ({ title, children, onClose }: any) => (
 
 /**
  * ============================================================================
- * 4. PUBLIC PAGES (Landing, Pricing, Testimonials)
+ * 4. PUBLIC PAGES (Landing, Pricing, Testimonials, FAQ)
  * ============================================================================
  */
+
+const FAQSection = () => {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  const faqs = [
+    {
+      q: "How does the multi-tenant system work?",
+      a: "Each school gets a unique school_id when they register. All data is filtered by this ID, ensuring complete isolation between schools. Your data is never visible to other schools."
+    },
+    {
+      q: "Can I migrate from another school management system?",
+      a: "Yes! We provide bulk import tools for students, teachers, and historical marks. Our support team can also assist with custom data migrations to ensure a smooth transition to Smart School Flow."
+    },
+    {
+      q: "Is there a limit on the number of users?",
+      a: "User limits are based on your subscription plan. The Starter plan supports up to 100 students, while Enterprise offers unlimited users and students."
+    },
+    {
+      q: "How secure is the student data?",
+      a: "We use Supabase with Row Level Security (RLS) policies, ensuring data is encrypted at rest and in transit. Each school's data is completely isolated, providing enterprise-grade security for sensitive student information."
+    },
+    {
+      q: "Can parents access the system?",
+      a: "Yes! Parents have a dedicated view where they can securely check their children's results, attendance records, and school announcements using the student's unique Index ID."
+    },
+    {
+      q: "Do you offer training for school staff?",
+      a: "Premium plans include dedicated training sessions for your administrative team. Additionally, all plans have access to our comprehensive video tutorials and documentation."
+    }
+  ];
+
+  return (
+    <section className="py-20 bg-white border-t border-gray-100">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <h5 className="text-brand-600 font-bold tracking-widest uppercase text-sm mb-2">FAQ</h5>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+          <p className="text-xl text-gray-500">Everything you need to know about Smart School Flow.</p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, i) => (
+            <div key={i} className="border-b border-gray-100 last:border-0">
+              <button
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className="w-full flex items-center justify-between py-6 text-left focus:outline-none group"
+              >
+                <span className={cn("text-lg font-bold transition-colors", openIndex === i ? "text-brand-600" : "text-gray-900 group-hover:text-brand-600")}>
+                  {faq.q}
+                </span>
+                {openIndex === i ? (
+                  <ChevronUp className="text-brand-600 shrink-0" size={20} />
+                ) : (
+                  <ChevronDown className="text-gray-400 shrink-0 group-hover:text-brand-600" size={20} />
+                )}
+              </button>
+              {openIndex === i && (
+                <div className="pb-6 animate-in slide-in-from-top-2 duration-200">
+                  <p className="text-gray-600 leading-relaxed">
+                    {faq.a}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const LandingPage = ({ setView }: any) => {
   // Hero Slider State
@@ -510,6 +580,9 @@ const LandingPage = ({ setView }: any) => {
 
       {/* Pricing Teaser */}
       <PricingPage setView={setView} embedded={true} />
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* Help Section */}
       <section className="bg-brand-600 py-20 text-white">
