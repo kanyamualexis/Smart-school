@@ -6,12 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart School Flow - School Management SaaS</title>
     
-    <!-- Tailwind CSS for rapid styling -->
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
             colors: {
               brand: {
                 50: '#eff6ff',
@@ -26,6 +34,38 @@
         }
       }
     </script>
+    <style type="text/tailwindcss">
+      @layer base {
+        html {
+          font-family: 'Inter', sans-serif;
+          @apply text-gray-900 antialiased;
+        }
+        body {
+          @apply text-base leading-relaxed text-gray-600;
+        }
+        h1 {
+          @apply text-4xl md:text-5xl font-black tracking-tight text-gray-900 leading-[1.1];
+        }
+        h2 {
+          @apply text-3xl font-bold tracking-tight text-gray-900 leading-snug;
+        }
+        h3 {
+          @apply text-2xl font-bold tracking-tight text-gray-900;
+        }
+        h4 {
+          @apply text-xl font-bold tracking-tight text-gray-900;
+        }
+        p {
+          @apply text-base text-gray-500 font-medium;
+        }
+        .text-label {
+          @apply text-sm font-bold text-gray-700;
+        }
+        .text-sub {
+          @apply text-sm text-gray-400 font-medium;
+        }
+      }
+    </style>
 </head>
 <body>
     <div id="root"></div>
