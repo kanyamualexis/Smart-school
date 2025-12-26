@@ -96,20 +96,28 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f3f4f6]">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#f3f4f6]">
       {/* LEFT SIDEBAR */}
-      <aside className={cn("bg-slate-900 text-slate-300 flex flex-col fixed h-full z-40 transition-all duration-300 shadow-2xl", isSidebarCollapsed ? "w-20" : "w-72")}>
+      <aside className={cn(
+        "bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 shadow-2xl shrink-0 overflow-hidden",
+        "md:sticky md:top-0 md:h-screen", // Sticky only on desktop
+        isSidebarCollapsed ? "w-0 md:w-20" : "w-full md:w-72" // Full width on mobile when open, controlled by layout
+      )}>
         {/* Logo Area */}
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800 h-24">
+        <div className="p-6 flex items-center gap-3 border-b border-slate-800 h-24 shrink-0">
           <div className="bg-brand-600 p-2.5 rounded-xl shadow-lg shadow-brand-900/50 shrink-0">
              <School size={24} className="text-white"/>
           </div>
           {!isSidebarCollapsed && (
-            <div className="min-w-0">
+            <div className="min-w-0 hidden md:block">
                <h1 className="font-black text-white text-lg tracking-tight leading-none truncate">SMART FLOW</h1>
                <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mt-1">Enterprise</p>
             </div>
           )}
+          {/* Mobile Text */}
+          <div className="min-w-0 md:hidden">
+             <h1 className="font-black text-white text-lg tracking-tight leading-none truncate">SMART FLOW</h1>
+          </div>
         </div>
         
         {/* Menu Items */}
@@ -117,7 +125,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
           {menu.map((m, idx) => {
             if (m.section) {
                return !isSidebarCollapsed ? (
-                 <div key={idx} className="px-4 mt-6 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                 <div key={idx} className="px-4 mt-6 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hidden md:block">
                     {m.section}
                  </div>
                ) : <div key={idx} className="h-4"></div>;
@@ -135,11 +143,11 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                 title={isSidebarCollapsed ? m.label : ''}
               >
                 <m.icon size={20} className={cn("shrink-0 transition-colors", activeTab === m.id ? "text-white" : "group-hover:text-white")} />
-                {!isSidebarCollapsed && (
-                   <span className="font-bold text-xs tracking-wide truncate">{m.label}</span>
-                )}
+                <span className={cn("font-bold text-xs tracking-wide truncate", isSidebarCollapsed ? "hidden" : "block")}>
+                  {m.label}
+                </span>
                 {activeTab === m.id && !isSidebarCollapsed && (
-                   <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                   <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] md:block hidden" />
                 )}
               </button>
             );
@@ -147,7 +155,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
         </div>
 
         {/* Footer / Logout */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+        <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0">
            <button 
              onClick={() => { setUser(null); setView('landing'); }} 
              className={cn(
@@ -156,13 +164,13 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
              )}
            >
              <LogOut size={18} />
-             {!isSidebarCollapsed && <span>Logout</span>}
+             <span className={cn(isSidebarCollapsed ? "hidden" : "block")}>Logout</span>
            </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className={cn("flex-1 flex flex-col min-h-screen transition-all duration-300", isSidebarCollapsed ? "ml-20" : "ml-0 md:ml-72")}>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* TOP NAVBAR */}
         <header className="bg-white border-b border-gray-200 h-20 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between shadow-sm/50 backdrop-blur-sm bg-white/90">
@@ -201,7 +209,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                  >
                     <div className="text-right hidden md:block">
                        <div className="text-sm font-bold text-gray-900 leading-none">{user.full_name}</div>
-                       <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">{user.role.replace('_', ' ')}</div>
+                       <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-0.5">{user.role.replace('_', ' ')}</div>
                     </div>
                     <div className="w-9 h-9 bg-brand-600 rounded-full flex items-center justify-center text-white font-black shadow-md border-2 border-white">
                        {user.full_name[0]}
@@ -211,7 +219,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
 
                  {/* Dropdown */}
                  {profileOpen && (
-                   <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-in fade-in slide-in-from-top-2">
+                   <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-in fade-in slide-in-from-top-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-50 mb-1">
                          <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Signed in as</p>
                          <p className="text-sm font-bold text-gray-900 truncate">{user.email}</p>
@@ -227,7 +235,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
         </header>
 
         {/* PAGE CONTENT */}
-        <main className="p-6 md:p-10 max-w-[1600px] mx-auto w-full">
+        <main className="p-6 md:p-10 w-full overflow-auto flex-1 h-[calc(100vh-5rem)]">
            {renderContent()}
         </main>
       </div>

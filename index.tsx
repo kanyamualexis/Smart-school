@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import './index.css'; // Import global styles
 import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
 import { RegisterPage } from './pages/RegisterPage';
