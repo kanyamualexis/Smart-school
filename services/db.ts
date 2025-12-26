@@ -8,6 +8,36 @@ class DatabaseService {
    * Login with Supabase Auth
    */
   async login(email: string, pass: string): Promise<{ user: User | null, error: string | null }> {
+    
+    // --- DEMO BYPASS ---
+    // Allows logging in without backend setup for demonstration purposes
+    if (email === 'admin@smartschoolflow.com' && pass === 'admin123') {
+      return {
+        user: {
+          id: 'demo_admin',
+          email,
+          full_name: 'Platform Administrator (Demo)',
+          role: 'platform_admin',
+          school_id: ''
+        },
+        error: null
+      };
+    }
+
+    if (email === 'demo@school.com' && pass === '123') {
+      return {
+        user: {
+          id: 'demo_school_admin',
+          email,
+          full_name: 'Demo Principal',
+          role: 'school_admin',
+          school_id: '1' // Matches the mock school in getSchools()
+        },
+        error: null
+      };
+    }
+    // -------------------
+
     try {
       // 1. Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
