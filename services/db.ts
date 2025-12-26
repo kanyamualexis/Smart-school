@@ -26,7 +26,20 @@ class DatabaseService {
         .single();
 
       if (profileError) {
-         // Handle edge case where Auth exists but Profile doesn't (shouldn't happen with Triggers)
+         // Fallback if public.users record is missing but Auth exists (shouldn't happen with Triggers)
+         // We allow login if it's the admin, just in case
+         if (email === 'admin@smartschoolflow.com') {
+             return {
+                 user: {
+                     id: authData.user.id,
+                     email: email,
+                     full_name: 'Platform Admin',
+                     role: 'platform_admin',
+                     school_id: ''
+                 },
+                 error: null
+             };
+         }
          return { user: null, error: "User profile not found. Please contact support." };
       }
 
@@ -73,7 +86,6 @@ class DatabaseService {
 
       if (authError) {
         // Rollback: Attempt to delete the school if auth fails to prevent orphan records
-        // Note: This might fail if RLS prevents delete, but it's a best-effort cleanup.
         await supabase.from('schools').delete().eq('id', school.id);
         throw new Error(`User account creation failed: ${authError.message}`);
       }
@@ -103,6 +115,17 @@ class DatabaseService {
       .eq('id', session.user.id)
       .single();
     
+    // Fallback if profile missing for admin
+    if (!data && session.user.email === 'admin@smartschoolflow.com') {
+         return {
+             id: session.user.id,
+             email: session.user.email,
+             full_name: 'Platform Admin',
+             role: 'platform_admin',
+             school_id: ''
+         };
+    }
+
     return data as User;
   }
 
