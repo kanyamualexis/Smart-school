@@ -42,13 +42,17 @@ class DatabaseService {
     }
   }
 
-  async registerSchool(data: { name: string, district: string, plan: any, email: string, pass: string, hasNursery: boolean, adminName?: string }): Promise<{ success: boolean, error?: string }> {
+  async registerSchool(data: { name: string, district: string, phone: string, address: string, plan: any, email: string, pass: string, hasNursery: boolean, adminName?: string }): Promise<{ success: boolean, error?: string }> {
     try {
+      // Temporary workaround: Combine contact details into district field 
+      // because 'address' and 'phone' columns do not exist in the current database schema
+      const compositeDistrict = `${data.district} | ${data.phone} | ${data.address}`;
+
       const { data: school, error: schoolError } = await supabase
         .from('schools')
         .insert({
           name: data.name,
-          district: data.district,
+          district: compositeDistrict,
           plan: data.plan,
           has_nursery: data.hasNursery,
           status: 'pending' // Default to pending until approved

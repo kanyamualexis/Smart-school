@@ -7,6 +7,8 @@ export interface SchoolData {
   name: string;
   logo?: string;
   district: string;
+  phone?: string;
+  address?: string;
   plan: 'starter' | 'professional' | 'enterprise';
   has_nursery: boolean;
   status?: SchoolStatus;
