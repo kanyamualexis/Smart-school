@@ -4,7 +4,8 @@ import {
   School, Menu, X, ChevronLeft, ChevronRight, 
   ChevronUp, ChevronDown, CheckCircle, Play, 
   Star, Mail, Phone, MessageCircle, Clock, 
-  BarChart3, Globe, Users, BookOpen
+  BarChart3, Globe, Users, BookOpen, GraduationCap,
+  Award, Medal, ShieldCheck
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { PricingPage } from './PricingPage';
@@ -107,7 +108,30 @@ export const LandingPage = ({ setView }: any) => {
       image: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?auto=format&fit=crop&q=80&w=2000",
       title: "Empower Learning",
       subtitle: "Tools that help teachers focus on what matters most: the students."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=2000",
+      title: "Data-Driven Decisions",
+      subtitle: "Gain actionable insights into student performance and institutional growth."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1427504746696-ea5abd73a3bd?auto=format&fit=crop&q=80&w=2000",
+      title: "Connect & Collaborate",
+      subtitle: "Bridge the gap between classrooms and homes with seamless communication."
     }
+  ];
+
+  // Logos for Marquee
+  const partners = [
+    { name: "Greenwood High", icon: School },
+    { name: "Riverside Academy", icon: GraduationCap },
+    { name: "Oakridge Intl", icon: BookOpen },
+    { name: "St. Mary's School", icon: Award },
+    { name: "Tech High", icon: Globe },
+    { name: "Future Leaders", icon: Medal },
+    { name: "Global Knowledge", icon: Users },
+    { name: "Bright Minds", icon: Star },
+    { name: "Elite College", icon: ShieldCheck }
   ];
 
   useEffect(() => {
@@ -121,7 +145,6 @@ export const LandingPage = ({ setView }: any) => {
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
   const scrollToSection = (id: string) => {
-    // If not in landing view, switch to it first
     setView('landing');
     setTimeout(() => {
       const element = document.getElementById(id);
@@ -234,8 +257,28 @@ export const LandingPage = ({ setView }: any) => {
         </div>
       </div>
 
+      {/* NEW: Moving Logos Marquee */}
+      <section className="py-12 bg-white overflow-hidden mt-8">
+        <p className="text-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-8">Trusted by leading educational institutions</p>
+        <div className="flex w-full overflow-hidden relative">
+           {/* Gradient Masks */}
+           <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white to-transparent z-10" />
+           <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white to-transparent z-10" />
+           
+           <div className="flex animate-scroll whitespace-nowrap gap-16 px-8">
+             {/* Double the list to ensure smooth infinite scroll */}
+             {[...partners, ...partners].map((p, i) => (
+               <div key={i} className="flex items-center gap-3 text-gray-400 grayscale hover:grayscale-0 hover:text-brand-600 transition-all duration-300">
+                 <p.icon size={32} strokeWidth={1.5} />
+                 <span className="text-xl font-bold tracking-tight">{p.name}</span>
+               </div>
+             ))}
+           </div>
+        </div>
+      </section>
+
       {/* Impact Stats Bar */}
-      <section className="bg-brand-600 py-16 text-white mt-12 mb-12">
+      <section className="bg-brand-600 py-16 text-white mb-12">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           <div className="text-center">
             <div className="text-4xl md:text-6xl font-bold mb-2 tracking-tight">{statsConfig.schools}</div>
