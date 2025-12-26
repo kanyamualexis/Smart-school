@@ -5,54 +5,20 @@ class DatabaseService {
   // --- AUTHENTICATION ---
 
   /**
-   * Login with Supabase Auth
+   * Login with REAL Supabase Auth
    */
   async login(email: string, pass: string): Promise<{ user: User | null, error: string | null }> {
-    
-    // Normalize inputs to prevent whitespace issues (common on mobile)
-    const cleanEmail = email.toLowerCase().trim();
-    const cleanPass = pass.trim();
-
-    // --- DEMO BYPASS ---
-    // Allows logging in without backend setup for demonstration purposes
-    if (cleanEmail === 'admin@smartschoolflow.com' && cleanPass === 'admin123') {
-      return {
-        user: {
-          id: 'demo_admin',
-          email: cleanEmail,
-          full_name: 'Platform Administrator (Demo)',
-          role: 'platform_admin',
-          school_id: ''
-        },
-        error: null
-      };
-    }
-
-    if (cleanEmail === 'demo@school.com' && cleanPass === '123') {
-      return {
-        user: {
-          id: 'demo_school_admin',
-          email: cleanEmail,
-          full_name: 'Demo Principal',
-          role: 'school_admin',
-          school_id: '1' // Matches the mock school in getSchools()
-        },
-        error: null
-      };
-    }
-    // -------------------
-
     try {
       // 1. Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPass,
+        email: email.trim(),
+        password: pass.trim(),
       });
 
       if (authError) return { user: null, error: authError.message };
-      if (!authData.user) return { user: null, error: "No user found" };
+      if (!authData.user) return { user: null, error: "Authentication failed" };
 
-      // 2. Fetch User Profile (Role & School ID) from public.users table
+      // 2. Fetch User Profile from public.users table
       const { data: profileData, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -60,34 +26,23 @@ class DatabaseService {
         .single();
 
       if (profileError) {
-        // Fallback for Super Admin (Initial Setup) if not in public table yet
-        if (cleanEmail === 'admin@smartschoolflow.com') {
-           return { 
-             user: { 
-               id: authData.user.id, 
-               email: cleanEmail, 
-               full_name: 'Platform Admin', 
-               role: 'platform_admin', 
-               school_id: '' 
-             }, 
-             error: null 
-           };
-        }
-        return { user: null, error: "Profile not found. Please contact support." };
+         // Handle edge case where Auth exists but Profile doesn't (shouldn't happen with Triggers)
+         return { user: null, error: "User profile not found. Please contact support." };
       }
 
       return { user: profileData as User, error: null };
     } catch (e: any) {
-      return { user: null, error: e.message };
+      return { user: null, error: e.message || "An unexpected error occurred" };
     }
   }
 
   /**
-   * Register a new School and Admin
+   * Register a new School and Admin (Atomic Transaction-like)
    */
   async registerSchool(data: { name: string, district: string, plan: any, email: string, pass: string, hasNursery: boolean, adminName?: string }): Promise<{ success: boolean, error?: string }> {
     try {
       // 1. Create School Record
+      // We insert the school first. RLS 'Open registration' allows this.
       const { data: school, error: schoolError } = await supabase
         .from('schools')
         .insert({
@@ -95,7 +50,7 @@ class DatabaseService {
           district: data.district,
           plan: data.plan,
           has_nursery: data.hasNursery,
-          status: 'pending'
+          status: 'active'
         })
         .select()
         .single();
@@ -103,29 +58,25 @@ class DatabaseService {
       if (schoolError) throw new Error(`School creation failed: ${schoolError.message}`);
 
       // 2. Create Auth User
+      // We pass the school_id in metadata so the SQL Trigger can create the public.users record correctly
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.pass,
         options: {
-          data: { full_name: data.adminName || 'School Admin' } // Metadata
+          data: { 
+            full_name: data.adminName || 'School Admin',
+            role: 'school_admin',
+            school_id: school.id 
+          }
         }
       });
 
-      if (authError) throw new Error(`Auth creation failed: ${authError.message}`);
-      if (!authData.user) throw new Error("Auth user creation failed");
-
-      // 3. Create Public User Profile linked to School
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id, // Link to Auth ID
-          email: data.email,
-          full_name: data.adminName || 'School Admin',
-          role: 'school_admin',
-          school_id: school.id
-        });
-
-      if (profileError) throw new Error(`Profile creation failed: ${profileError.message}`);
+      if (authError) {
+        // Rollback: Attempt to delete the school if auth fails to prevent orphan records
+        // Note: This might fail if RLS prevents delete, but it's a best-effort cleanup.
+        await supabase.from('schools').delete().eq('id', school.id);
+        throw new Error(`User account creation failed: ${authError.message}`);
+      }
 
       return { success: true };
 
@@ -155,24 +106,22 @@ class DatabaseService {
     return data as User;
   }
 
-  // --- DATA FETCHING (Mocked Fallbacks -> To be replaced with Supabase Selects) ---
-  // Keeping these synchronous for now to prevent breaking UI components that haven't been refactored yet.
-  // In a full migration, these would become async calls to supabase.from(...).select().
+  // --- DATA FETCHING ---
+  // Note: For a full production migration, all components calling these synchronous methods
+  // should be refactored to use async/await or React Query.
+  // Currently, these serve as a mock fallback or placeholder. 
   
   init() { 
-    // No-op for Supabase
     console.log("Supabase Service Initialized");
   }
 
   getSchools(): SchoolData[] { 
-    // MOCK DATA for display purposes until async refactor
     return [
       { id: '1', name: 'Demo High School', district: 'Kigali', plan: 'professional', has_nursery: true, status: 'active' }
     ];
   }
   
   getSchool(id: string): SchoolData | null {
-     // MOCK DATA
      return { id, name: 'Demo School', district: 'Kigali', plan: 'professional', has_nursery: true, status: 'active' };
   }
 

@@ -28,7 +28,7 @@ export const AuthPage = ({ setView, setUser }: any) => {
       setUser(user);
       setView('dashboard');
     } else {
-      setError(error || 'Invalid credentials. Please check for typos or spaces.');
+      setError(error || 'Invalid credentials. Please check for typos.');
     }
     setLoading(false);
   };
@@ -39,26 +39,7 @@ export const AuthPage = ({ setView, setUser }: any) => {
         <School size={64} className="mb-6" />
         <h1 className="text-4xl font-bold mb-4">Smart School Flow</h1>
         <p className="text-lg opacity-90">Manage your entire institution from one unified dashboard.</p>
-        
-        <div className="mt-8 text-left bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20 max-w-sm w-full shadow-lg">
-          <p className="font-bold uppercase tracking-widest text-xs text-blue-200 mb-4 border-b border-white/10 pb-2">Demo Access Credentials</p>
-          <div className="space-y-4 text-sm">
-            <div>
-              <p className="font-bold text-white mb-1">Platform Admin:</p>
-              <div className="bg-black/20 p-2 rounded border border-white/5">
-                <p className="font-mono text-blue-100 text-xs select-all">admin@smartschoolflow.com</p>
-                <p className="text-blue-200 text-xs mt-1">Pass: <span className="font-mono text-white font-bold select-all">admin123</span></p>
-              </div>
-            </div>
-            <div>
-              <p className="font-bold text-white mb-1">School Admin:</p>
-              <div className="bg-black/20 p-2 rounded border border-white/5">
-                <p className="font-mono text-blue-100 text-xs select-all">demo@school.com</p>
-                <p className="text-blue-200 text-xs mt-1">Pass: <span className="font-mono text-white font-bold select-all">123</span></p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <p className="mt-4 text-sm text-brand-100">Secure, Cloud-Based School Management</p>
       </div>
       <div className="flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-lg">
