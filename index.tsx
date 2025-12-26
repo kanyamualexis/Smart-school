@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css'; // Import global styles
 import { LandingPage } from './pages/LandingPage';
@@ -17,6 +17,24 @@ db.init();
 const App = () => {
   const [view, setView] = useState('landing');
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check for active session on load
+  useEffect(() => {
+    const checkSession = async () => {
+      const u = await db.getCurrentUser();
+      if (u) {
+        setUser(u);
+        setView('dashboard');
+      }
+      setLoading(false);
+    };
+    checkSession();
+  }, []);
+
+  if (loading) {
+    return <div className="h-screen w-full flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div></div>;
+  }
 
   switch(view) {
     case 'dashboard': return user ? <DashboardPage user={user} setUser={setUser} setView={setView} /> : <AuthPage setView={setView} setUser={setUser} />;

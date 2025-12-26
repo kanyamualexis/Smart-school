@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { School, Check, CheckCircle, ArrowLeft, Building2, UserCircle, Layers } from 'lucide-react';
+import { School, Check, CheckCircle, ArrowLeft, Building2, UserCircle, Layers, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { db } from '../services/db';
@@ -8,6 +8,8 @@ import { formatCurrency } from '../utils/formatters';
 
 export const RegisterPage = ({ setView }: any) => {
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({ 
     name: '', 
     district: '', 
@@ -19,18 +21,28 @@ export const RegisterPage = ({ setView }: any) => {
     plan: 'starter' 
   });
 
-  const finish = () => {
+  const finish = async () => {
+    setError('');
+    
     if (!form.name || !form.district || !form.email || !form.pass) { 
-      alert("Please ensure all fields are filled."); 
+      setError("Please ensure all fields are filled."); 
       return; 
     }
     if (form.pass !== form.confirmPass) { 
-      alert("Passwords do not match."); 
+      setError("Passwords do not match."); 
       return; 
     }
-    db.registerSchool(form);
-    alert('Registration Successful! Redirecting to login...');
-    setView('login');
+    
+    setIsLoading(true);
+    const result = await db.registerSchool(form);
+    setIsLoading(false);
+
+    if (result.success) {
+      alert('Registration Successful! Please check your email to confirm, then login.');
+      setView('login');
+    } else {
+      setError(result.error || 'Registration failed. Please try again.');
+    }
   };
 
   const steps = [
@@ -75,6 +87,14 @@ export const RegisterPage = ({ setView }: any) => {
       </div>
 
       <div className={`bg-white rounded-[3.5rem] shadow-[0_48px_80px_-24px_rgba(0,0,0,0.1)] w-full transition-all duration-300 ${step === 3 ? 'max-w-7xl p-8 bg-transparent shadow-none' : 'max-w-3xl p-16 border border-gray-100'}`}>
+        
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 text-red-600 rounded-2xl flex items-center gap-3 text-sm font-bold">
+            <AlertTriangle size={20} />
+            {error}
+          </div>
+        )}
+
         {step === 1 && (
           <div className="space-y-8 animate-in slide-in-from-right fade-in duration-500">
             <div className="mb-10">
@@ -158,7 +178,7 @@ export const RegisterPage = ({ setView }: any) => {
             </div>
             <div className="max-w-xl mx-auto flex gap-8">
               <Button variant="secondary" onClick={() => setStep(2)} className="flex-1 h-20 text-[11px] font-bold uppercase tracking-[0.4em] rounded-2xl">Back</Button>
-              <Button onClick={finish} className="flex-1 h-20 text-[11px] font-bold uppercase tracking-[0.4em] rounded-2xl shadow-2xl">Finalize Deployment</Button>
+              <Button onClick={finish} isLoading={isLoading} className="flex-1 h-20 text-[11px] font-bold uppercase tracking-[0.4em] rounded-2xl shadow-2xl">Finalize Deployment</Button>
             </div>
           </div>
         )}
