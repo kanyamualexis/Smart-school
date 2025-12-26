@@ -5,7 +5,7 @@ import {
   ChevronUp, ChevronDown, CheckCircle, Play, 
   Star, Mail, Phone, MessageCircle, Clock, 
   BarChart3, Globe, Users, BookOpen, GraduationCap,
-  Award, Medal, ShieldCheck
+  Award, Medal, ShieldCheck, Search
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { PricingPage } from './PricingPage';
@@ -173,7 +173,9 @@ export const LandingPage = ({ setView }: any) => {
             <button onClick={goToHome} className="hover:text-brand-600 transition-colors">Home</button>
             <button onClick={() => scrollToSection('pricing')} className="hover:text-brand-600 transition-colors">Pricing</button>
             <button onClick={() => setView('testimonials')} className="hover:text-brand-600 transition-colors">Testimonials</button>
-            <button onClick={() => setView('result_check')} className="hover:text-brand-600 transition-colors">Check Results</button>
+            <button onClick={() => setView('result_check')} className="hover:text-brand-600 transition-colors flex items-center gap-2">
+              <Search size={18} /> Check Results
+            </button>
           </div>
 
           <div className="hidden md:flex gap-4 items-center">
@@ -193,7 +195,9 @@ export const LandingPage = ({ setView }: any) => {
              <button onClick={() => { goToHome(); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Home</button>
              <button onClick={() => { scrollToSection('pricing'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Pricing</button>
              <button onClick={() => { setView('testimonials'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Testimonials</button>
-             <button onClick={() => { setView('result_check'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Check Results</button>
+             <button onClick={() => { setView('result_check'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600 flex items-center gap-2">
+               <Search size={18} /> Check Results
+             </button>
              <div className="h-px bg-gray-100 my-2" />
              <button onClick={() => { setView('login'); setMobileMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600">Login</button>
              <Button onClick={() => { setView('register'); setMobileMenuOpen(false); }} className="w-full mt-2">Get Started</Button>
@@ -252,7 +256,9 @@ export const LandingPage = ({ setView }: any) => {
           </div>
           <div className="flex gap-4 w-full md:w-auto">
             <Button onClick={() => setView('register')} className="flex-1 md:flex-none">Start Free Trial</Button>
-            <Button variant="outline" onClick={() => setView('result_check')} className="flex-1 md:flex-none">Check Results</Button>
+            <Button variant="outline" onClick={() => setView('result_check')} className="flex-1 md:flex-none">
+              <Search size={18} className="mr-2" /> Check Results
+            </Button>
           </div>
         </div>
       </div>
@@ -457,3 +463,4 @@ export const LandingPage = ({ setView }: any) => {
     </div>
   );
 };
+    
