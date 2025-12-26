@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { School, Check, CheckCircle, ArrowLeft, Building2, UserCircle, Layers, AlertTriangle, CreditCard, Smartphone, UploadCloud, Image, Info, ShieldCheck, FileText, ArrowRight } from 'lucide-react';
+import { School, Check, CheckCircle, ArrowLeft, Building2, UserCircle, Layers, AlertTriangle, CreditCard, Smartphone, UploadCloud, Image, Info, ShieldCheck, FileText, ArrowRight, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { db } from '../services/db';
@@ -112,7 +112,15 @@ export const RegisterPage = ({ setView }: any) => {
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-2xl max-w-lg w-full text-center border border-gray-100 animate-in zoom-in duration-300">
+        <div className="relative bg-white p-10 md:p-14 rounded-[2.5rem] shadow-2xl max-w-lg w-full text-center border border-gray-100 animate-in zoom-in duration-300">
+           <button 
+             onClick={() => setView('landing')}
+             className="absolute top-6 right-6 p-2 bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-full transition-all"
+             title="Close"
+           >
+             <X size={24} />
+           </button>
+
            <div className="w-28 h-28 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
               <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-200">
                  <Check size={48} className="text-white stroke-[3]" />
