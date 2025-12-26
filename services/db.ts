@@ -9,13 +9,17 @@ class DatabaseService {
    */
   async login(email: string, pass: string): Promise<{ user: User | null, error: string | null }> {
     
+    // Normalize inputs to prevent whitespace issues (common on mobile)
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanPass = pass.trim();
+
     // --- DEMO BYPASS ---
     // Allows logging in without backend setup for demonstration purposes
-    if (email === 'admin@smartschoolflow.com' && pass === 'admin123') {
+    if (cleanEmail === 'admin@smartschoolflow.com' && cleanPass === 'admin123') {
       return {
         user: {
           id: 'demo_admin',
-          email,
+          email: cleanEmail,
           full_name: 'Platform Administrator (Demo)',
           role: 'platform_admin',
           school_id: ''
@@ -24,11 +28,11 @@ class DatabaseService {
       };
     }
 
-    if (email === 'demo@school.com' && pass === '123') {
+    if (cleanEmail === 'demo@school.com' && cleanPass === '123') {
       return {
         user: {
           id: 'demo_school_admin',
-          email,
+          email: cleanEmail,
           full_name: 'Demo Principal',
           role: 'school_admin',
           school_id: '1' // Matches the mock school in getSchools()
@@ -41,8 +45,8 @@ class DatabaseService {
     try {
       // 1. Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password: pass,
+        email: cleanEmail,
+        password: cleanPass,
       });
 
       if (authError) return { user: null, error: authError.message };
@@ -57,11 +61,11 @@ class DatabaseService {
 
       if (profileError) {
         // Fallback for Super Admin (Initial Setup) if not in public table yet
-        if (email === 'admin@smartschoolflow.com') {
+        if (cleanEmail === 'admin@smartschoolflow.com') {
            return { 
              user: { 
                id: authData.user.id, 
-               email, 
+               email: cleanEmail, 
                full_name: 'Platform Admin', 
                role: 'platform_admin', 
                school_id: '' 

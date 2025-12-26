@@ -15,13 +15,20 @@ export const AuthPage = ({ setView, setUser }: any) => {
     setLoading(true);
     setError('');
 
+    // Pre-validation to help user
+    if (!email.trim() || !pass.trim()) {
+       setError('Please enter both email and password.');
+       setLoading(false);
+       return;
+    }
+
     const { user, error } = await db.login(email, pass);
     
     if (user) {
       setUser(user);
       setView('dashboard');
     } else {
-      setError(error || 'Invalid credentials');
+      setError(error || 'Invalid credentials. Please check for typos or spaces.');
     }
     setLoading(false);
   };
@@ -39,15 +46,15 @@ export const AuthPage = ({ setView, setUser }: any) => {
             <div>
               <p className="font-bold text-white mb-1">Platform Admin:</p>
               <div className="bg-black/20 p-2 rounded border border-white/5">
-                <p className="font-mono text-blue-100 text-xs">admin@smartschoolflow.com</p>
-                <p className="text-blue-200 text-xs mt-1">Pass: <span className="font-mono text-white font-bold">admin123</span></p>
+                <p className="font-mono text-blue-100 text-xs select-all">admin@smartschoolflow.com</p>
+                <p className="text-blue-200 text-xs mt-1">Pass: <span className="font-mono text-white font-bold select-all">admin123</span></p>
               </div>
             </div>
             <div>
               <p className="font-bold text-white mb-1">School Admin:</p>
               <div className="bg-black/20 p-2 rounded border border-white/5">
-                <p className="font-mono text-blue-100 text-xs">demo@school.com</p>
-                <p className="text-blue-200 text-xs mt-1">Pass: <span className="font-mono text-white font-bold">123</span></p>
+                <p className="font-mono text-blue-100 text-xs select-all">demo@school.com</p>
+                <p className="text-blue-200 text-xs mt-1">Pass: <span className="font-mono text-white font-bold select-all">123</span></p>
               </div>
             </div>
           </div>
@@ -58,15 +65,28 @@ export const AuthPage = ({ setView, setUser }: any) => {
           <h2 className="text-2xl font-bold mb-6">Welcome Back</h2>
           
           {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-3 text-sm font-medium">
-              <AlertCircle size={18} />
-              {error}
+            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-3 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+              <AlertCircle size={18} className="shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={login} className="space-y-4">
-            <Input label="Email" type="email" value={email} onChange={(e:any) => setEmail(e.target.value)} required />
-            <Input label="Password" type="password" value={pass} onChange={(e:any) => setPass(e.target.value)} required />
+            <Input 
+                label="Email" 
+                type="email" 
+                value={email} 
+                onChange={(e:any) => setEmail(e.target.value)} 
+                required 
+                placeholder="name@school.com"
+            />
+            <Input 
+                label="Password" 
+                type="password" 
+                value={pass} 
+                onChange={(e:any) => setPass(e.target.value)} 
+                required 
+            />
             <Button className="w-full h-12" isLoading={loading}>Sign In</Button>
           </form>
           <div className="mt-6 text-center text-sm">
