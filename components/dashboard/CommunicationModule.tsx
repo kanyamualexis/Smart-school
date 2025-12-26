@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { User } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { User, Announcement, Material } from '../../types';
 import { db } from '../../services/db';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -8,8 +8,13 @@ import { Megaphone, FileText, Download, Plus, UploadCloud } from 'lucide-react';
 
 export const CommunicationModule = ({ user, section }: { user: User, section: string }) => {
   const [activeTab, setActiveTab] = useState('announcements');
-  const announcements = db.getAnnouncements(user.school_id);
-  const materials = db.getMaterials(user.school_id);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+
+  useEffect(() => {
+    db.getAnnouncements(user.school_id).then(setAnnouncements);
+    db.getMaterials(user.school_id).then(setMaterials);
+  }, [user.school_id]);
 
   if (section === 'materials') {
      return (

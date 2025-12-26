@@ -1,28 +1,37 @@
-
-import React from 'react';
-import { Users, GraduationCap, School, TrendingUp, Calendar, AlertCircle, Award } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Users, GraduationCap, School, TrendingUp, AlertCircle, Award } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { db } from '../../services/db';
 import { User } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 
 export const Overview = ({ user }: { user: User }) => {
-  const students = db.getStudents(user.school_id);
-  const teachers = db.getUsers(user.school_id, 'teacher');
-  const classes = db.getClasses(user.school_id);
-  const parents = db.getParents(user.school_id);
+  const [counts, setCounts] = useState({ students: 0, teachers: 0, classes: 0, parents: 0 });
+
+  useEffect(() => {
+    const load = async () => {
+      const [st, te, cl, pa] = await Promise.all([
+        db.getStudents(user.school_id),
+        db.getUsers(user.school_id, 'teacher'),
+        db.getClasses(user.school_id),
+        db.getParents(user.school_id)
+      ]);
+      setCounts({ students: st.length, teachers: te.length, classes: cl.length, parents: pa.length });
+    };
+    load();
+  }, [user.school_id]);
 
   // Mock calculation
-  const revenueEst = students.length * 50000; 
+  const revenueEst = counts.students * 50000; 
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Top Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card title="Total Students" value={students.length} icon={GraduationCap} color="bg-blue-50 text-blue-600" />
-        <Card title="Teachers" value={teachers.length} icon={School} color="bg-indigo-50 text-indigo-600" />
-        <Card title="Parents" value={parents.length} icon={Users} color="bg-purple-50 text-purple-600" />
-        <Card title="Active Classes" value={classes.length} icon={Award} color="bg-emerald-50 text-emerald-600" />
+        <Card title="Total Students" value={counts.students} icon={GraduationCap} color="bg-blue-50 text-blue-600" />
+        <Card title="Teachers" value={counts.teachers} icon={School} color="bg-indigo-50 text-indigo-600" />
+        <Card title="Parents" value={counts.parents} icon={Users} color="bg-purple-50 text-purple-600" />
+        <Card title="Active Classes" value={counts.classes} icon={Award} color="bg-emerald-50 text-emerald-600" />
       </div>
 
       {/* Charts & Activity Section */}

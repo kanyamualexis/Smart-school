@@ -23,10 +23,10 @@ export const ResultCheckPage = ({ setView }: any) => {
     setLoading(true);
     setStudent(null);
     await new Promise(resolve => setTimeout(resolve, 800));
-    const allSchools = db.getSchools();
+    const allSchools = await db.getSchools();
     let found = null;
     for (const s of allSchools) {
-      const res = db.checkResult(s.id, indexNumber);
+      const res = await db.checkResult(s.id, indexNumber);
       if (res) { found = res; break; }
     }
     if (!found) { setError('Student not found. Please check the index number.'); setLoading(false); return; }

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   School, LogOut, BarChart3, BookOpen, GraduationCap, 
   Calendar, Settings, Users, CreditCard, LayoutDashboard, 
@@ -15,15 +15,20 @@ import { CommunicationModule } from '../components/dashboard/CommunicationModule
 import { PlatformOverview } from '../components/dashboard/PlatformOverview';
 import { SchoolsManagement } from '../components/dashboard/SchoolsManagement';
 import { db } from '../services/db';
-import { User } from '../types';
+import { User, SchoolData } from '../types';
 import { cn } from '../utils/cn';
 
 export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser: any, setView: any }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [school, setSchool] = useState<SchoolData | null>(null);
 
-  const school = user.school_id ? db.getSchool(user.school_id) : null;
+  useEffect(() => {
+    if (user.school_id) {
+        db.getSchool(user.school_id).then(setSchool);
+    }
+  }, [user.school_id]);
 
   const menu = useMemo(() => {
     // Platform Admin Menu

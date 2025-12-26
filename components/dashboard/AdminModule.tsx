@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ManageTeachers } from './ManageTeachers';
 import { ManageStudents } from './ManageStudents';
 import { SchoolSettings } from './SchoolSettings';
@@ -64,7 +64,12 @@ const UserManagement = ({ user }: { user: User }) => {
 };
 
 const BillingSection = ({ user }: { user: User }) => {
-  const school = db.getSchool(user.school_id);
+  const [school, setSchool] = useState<SchoolData | null>(null);
+
+  useEffect(() => {
+    db.getSchool(user.school_id).then(setSchool);
+  }, [user.school_id]);
+
   if (!school) return null;
 
   return (

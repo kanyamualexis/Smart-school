@@ -4,12 +4,8 @@ import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Mat
 class DatabaseService {
   // --- AUTHENTICATION ---
 
-  /**
-   * Login with REAL Supabase Auth
-   */
   async login(email: string, pass: string): Promise<{ user: User | null, error: string | null }> {
     try {
-      // 1. Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: pass.trim(),
@@ -18,7 +14,6 @@ class DatabaseService {
       if (authError) return { user: null, error: authError.message };
       if (!authData.user) return { user: null, error: "Authentication failed" };
 
-      // 2. Fetch User Profile from public.users table
       const { data: profileData, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -26,8 +21,6 @@ class DatabaseService {
         .single();
 
       if (profileError) {
-         // Fallback if public.users record is missing but Auth exists (shouldn't happen with Triggers)
-         // We allow login if it's the admin, just in case
          if (email === 'admin@smartschoolflow.com') {
              return {
                  user: {
@@ -49,13 +42,8 @@ class DatabaseService {
     }
   }
 
-  /**
-   * Register a new School and Admin (Atomic Transaction-like)
-   */
   async registerSchool(data: { name: string, district: string, plan: any, email: string, pass: string, hasNursery: boolean, adminName?: string }): Promise<{ success: boolean, error?: string }> {
     try {
-      // 1. Create School Record
-      // We insert the school first. RLS 'Open registration' allows this.
       const { data: school, error: schoolError } = await supabase
         .from('schools')
         .insert({
@@ -63,15 +51,13 @@ class DatabaseService {
           district: data.district,
           plan: data.plan,
           has_nursery: data.hasNursery,
-          status: 'active'
+          status: 'pending' // Default to pending until approved
         })
         .select()
         .single();
 
       if (schoolError) throw new Error(`School creation failed: ${schoolError.message}`);
 
-      // 2. Create Auth User
-      // We pass the school_id in metadata so the SQL Trigger can create the public.users record correctly
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.pass,
@@ -85,7 +71,6 @@ class DatabaseService {
       });
 
       if (authError) {
-        // Rollback: Attempt to delete the school if auth fails to prevent orphan records
         await supabase.from('schools').delete().eq('id', school.id);
         throw new Error(`User account creation failed: ${authError.message}`);
       }
@@ -102,9 +87,6 @@ class DatabaseService {
     await supabase.auth.signOut();
   }
 
-  /**
-   * Get current session user if page reloads
-   */
   async getCurrentUser(): Promise<User | null> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return null;
@@ -115,7 +97,6 @@ class DatabaseService {
       .eq('id', session.user.id)
       .single();
     
-    // Fallback if profile missing for admin
     if (!data && session.user.email === 'admin@smartschoolflow.com') {
          return {
              id: session.user.id,
@@ -129,57 +110,132 @@ class DatabaseService {
     return data as User;
   }
 
-  // --- DATA FETCHING ---
-  // Note: For a full production migration, all components calling these synchronous methods
-  // should be refactored to use async/await or React Query.
-  // Currently, these serve as a mock fallback or placeholder. 
-  
   init() { 
     console.log("Supabase Service Initialized");
   }
 
-  getSchools(): SchoolData[] { 
-    return [
-      { id: '1', name: 'Demo High School', district: 'Kigali', plan: 'professional', has_nursery: true, status: 'active' }
-    ];
+  // --- DATA FETCHING (ASYNC) ---
+
+  async getSchools(): Promise<SchoolData[]> { 
+    const { data, error } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
+    if (error) console.error(error);
+    return data || [];
   }
   
-  getSchool(id: string): SchoolData | null {
-     return { id, name: 'Demo School', district: 'Kigali', plan: 'professional', has_nursery: true, status: 'active' };
+  async getSchool(id: string): Promise<SchoolData | null> {
+     const { data, error } = await supabase.from('schools').select('*').eq('id', id).single();
+     if (error) console.error(error);
+     return data;
   }
 
-  updateSchool(id: string, data: Partial<SchoolData>) {
-    console.log('Update school', id, data);
+  async updateSchool(id: string, data: Partial<SchoolData>) {
+    const { error } = await supabase.from('schools').update(data).eq('id', id);
+    if (error) throw error;
   }
 
-  getUsers(schoolId: string, role?: Role): User[] { return []; }
-  addUser(u: User) { console.log('Add user', u); }
-  deleteUser(id: string) { console.log('Delete user', id); }
+  async getUsers(schoolId: string, role?: Role): Promise<User[]> { 
+    let query = supabase.from('users').select('*').eq('school_id', schoolId);
+    if (role) query = query.eq('role', role);
+    const { data, error } = await query;
+    if (error) console.error(error);
+    return data || [];
+  }
 
-  getStudents(schoolId: string, classGrade?: string): Student[] { return []; }
-  addStudent(s: Student) { console.log('Add student', s); }
+  async addUser(u: Partial<User>) {
+    // Note: In a real app, adding a user usually triggers an Auth Invite.
+    // Here we insert directly into public.users to ensure the School Admin sees them in the dashboard.
+    // The user won't be able to login unless an Auth account matches this ID or email.
+    // Ideally, this uses an Edge Function to create the Auth user securely.
+    const { error } = await supabase.from('users').insert(u);
+    if (error) throw error;
+  }
 
-  getParents(schoolId: string): Parent[] { return []; }
+  async deleteUser(id: string) { 
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) console.error(error);
+  }
 
-  getClasses(schoolId: string): ClassGrade[] { return []; }
-  addClass(c: ClassGrade) { console.log('Add class', c); }
+  async getStudents(schoolId: string, classGrade?: string): Promise<Student[]> {
+    let query = supabase.from('students').select('*').eq('school_id', schoolId);
+    if (classGrade) query = query.eq('class_grade', classGrade);
+    const { data, error } = await query;
+    if (error) console.error(error);
+    return data || [];
+  }
+
+  async addStudent(s: Partial<Student>) { 
+    const { error } = await supabase.from('students').insert(s);
+    if (error) throw error;
+  }
+
+  async getParents(schoolId: string): Promise<Parent[]> { 
+    const { data } = await supabase.from('parents').select('*').eq('school_id', schoolId);
+    return data || [];
+  }
+
+  async getClasses(schoolId: string): Promise<ClassGrade[]> { 
+    const { data, error } = await supabase.from('classes').select('*').eq('school_id', schoolId);
+    if (error) console.error(error);
+    return data || [];
+  }
+
+  async addClass(c: Partial<ClassGrade>) { 
+    const { error } = await supabase.from('classes').insert(c);
+    if (error) throw error;
+  }
   
-  getSubjects(schoolId: string): Subject[] { return []; }
-  addSubject(s: Subject) { console.log('Add subject', s); }
+  async getSubjects(schoolId: string): Promise<Subject[]> { 
+    const { data } = await supabase.from('subjects').select('*').eq('school_id', schoolId);
+    return data || [];
+  }
 
-  getMarks(schoolId: string, studentId?: string): Mark[] { return []; }
-  addMark(m: Mark) { console.log('Add mark', m); }
+  async addSubject(s: Partial<Subject>) { 
+    const { error } = await supabase.from('subjects').insert(s);
+    if (error) throw error;
+  }
 
-  checkResult(schoolId: string, indexNumber: string) { return null; }
+  async getMarks(schoolId: string, studentId?: string): Promise<Mark[]> { 
+    let query = supabase.from('marks').select('*').eq('school_id', schoolId);
+    if (studentId) query = query.eq('student_id', studentId);
+    const { data } = await query;
+    return data || [];
+  }
 
-  getMaterials(schoolId: string): Material[] { return []; }
-  addMaterial(m: Material) { console.log('Add mat', m); }
+  async addMark(m: Partial<Mark>) { 
+    const { error } = await supabase.from('marks').insert(m);
+    if (error) throw error;
+  }
 
-  getAnnouncements(schoolId: string): Announcement[] { return []; }
-  addAnnouncement(a: Announcement) { console.log('Add ann', a); }
+  async checkResult(schoolId: string, indexNumber: string) {
+    // 1. Find Student
+    const { data: student } = await supabase.from('students')
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('index_number', indexNumber)
+      .single();
+    
+    if (!student) return null;
 
-  getAttendance(schoolId: string, date?: string): Attendance[] { return []; }
-  markAttendance(att: Attendance) { console.log('Mark att', att); }
+    // 2. Get School
+    const { data: school } = await supabase.from('schools').select('*').eq('id', schoolId).single();
+
+    // 3. Get Marks
+    const { data: marks } = await supabase.from('marks')
+      .select('*')
+      .eq('student_id', student.id);
+
+    return { student, school, marks: marks || [] };
+  }
+
+  async getMaterials(schoolId: string): Promise<Material[]> { 
+    const { data } = await supabase.from('materials').select('*').eq('school_id', schoolId);
+    return data || [];
+  }
+
+  async getAnnouncements(schoolId: string): Promise<Announcement[]> { 
+    const { data } = await supabase.from('announcements').select('*').eq('school_id', schoolId);
+    return data || [];
+  }
 }
 
 export const db = new DatabaseService();

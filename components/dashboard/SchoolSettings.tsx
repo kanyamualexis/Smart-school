@@ -1,22 +1,32 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Edit } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { db } from '../../services/db';
-import { User } from '../../types';
+import { User, SchoolData } from '../../types';
 
 export const SchoolSettings = ({ user }: { user: User }) => {
-  const [school, setSchool] = useState(db.getSchool(user.school_id));
+  const [school, setSchool] = useState<SchoolData | null>(null);
   const [edit, setEdit] = useState(false);
-  const [name, setName] = useState(school?.name || '');
+  const [name, setName] = useState('');
 
-  const handleSave = () => {
-    db.updateSchool(user.school_id, { name });
-    setSchool(db.getSchool(user.school_id));
+  useEffect(() => {
+    const fetchSchool = async () => {
+      const data = await db.getSchool(user.school_id);
+      setSchool(data);
+      if (data) setName(data.name);
+    };
+    fetchSchool();
+  }, [user.school_id]);
+
+  const handleSave = async () => {
+    await db.updateSchool(user.school_id, { name });
+    const updated = await db.getSchool(user.school_id);
+    setSchool(updated);
     setEdit(false);
   };
 
-  if (!school) return null;
+  if (!school) return <div>Loading settings...</div>;
 
   return (
     <div className="max-w-2xl bg-white rounded-xl shadow-sm border p-8">

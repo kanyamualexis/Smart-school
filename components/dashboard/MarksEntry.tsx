@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { db } from '../../services/db';
-import { User, Student, Mark } from '../../types';
+import { User, Student, Mark, ClassGrade } from '../../types';
 
 export const MarksEntry = ({ user }: { user: User }) => {
   const [selectedClass, setSelectedClass] = useState('');
@@ -13,11 +13,22 @@ export const MarksEntry = ({ user }: { user: User }) => {
   const [score, setScore] = useState('');
   const [term, setTerm] = useState('Term 1');
   const [success, setSuccess] = useState(false);
+  const [classes, setClasses] = useState<ClassGrade[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
 
-  const classes = db.getClasses(user.school_id);
-  const students = selectedClass ? db.getStudents(user.school_id, selectedClass) : [];
+  useEffect(() => {
+    db.getClasses(user.school_id).then(setClasses);
+  }, [user.school_id]);
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (selectedClass) {
+        db.getStudents(user.school_id, selectedClass).then(setStudents);
+    } else {
+        setStudents([]);
+    }
+  }, [user.school_id, selectedClass]);
+
+  const handleSave = async () => {
     if (!selectedStudent || !subject || !score) {
       alert("Please fill all fields");
       return;
@@ -30,7 +41,7 @@ export const MarksEntry = ({ user }: { user: User }) => {
       term,
       school_id: user.school_id
     };
-    db.addMark(mark);
+    await db.addMark(mark);
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
     // Reset form

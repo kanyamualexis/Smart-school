@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ManageClasses } from './ManageClasses';
 import { MarksEntry } from './MarksEntry';
 import { Button } from '../ui/Button';
@@ -19,14 +19,19 @@ export const AcademicModule = ({ user, section }: { user: User, section: string 
 
 const AcademicsSection = ({ user }: { user: User }) => {
   const [activeTab, setActiveTab] = useState<'classes' | 'subjects' | 'timetable'>('classes');
-  const [subjects, setSubjects] = useState(db.getSubjects(user.school_id));
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [newSubject, setNewSubject] = useState('');
 
-  const handleAddSubject = () => {
+  useEffect(() => {
+    db.getSubjects(user.school_id).then(setSubjects);
+  }, [user.school_id]);
+
+  const handleAddSubject = async () => {
     if(!newSubject) return;
-    db.addSubject({ id: `sub_${Date.now()}`, name: newSubject, school_id: user.school_id });
-    setSubjects(db.getSubjects(user.school_id));
+    await db.addSubject({ id: `sub_${Date.now()}`, name: newSubject, school_id: user.school_id });
+    const s = await db.getSubjects(user.school_id);
+    setSubjects(s);
     setModalOpen(false);
     setNewSubject('');
   };
