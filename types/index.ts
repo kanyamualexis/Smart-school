@@ -119,3 +119,25 @@ export interface TimetableEntry {
   start_time: string;
   end_time: string;
 }
+
+export interface Plan {
+  id: string;
+  name: string;
+  price_monthly: number;
+  price_yearly: number;
+  description: string;
+  features: string[];
+  is_popular?: boolean;
+  color?: string; // CSS class for gradient/color
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  max_uses?: number;
+  used_count: number;
+  expires_at?: string;
+  status: 'active' | 'expired' | 'disabled';
+}

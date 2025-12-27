@@ -15,6 +15,10 @@ import { CommunicationModule } from '../components/dashboard/CommunicationModule
 import { PlatformOverview } from '../components/dashboard/PlatformOverview';
 import { SchoolsManagement } from '../components/dashboard/SchoolsManagement';
 import { Analytics } from '../components/dashboard/Analytics';
+import { 
+  PlatformUsers, PlatformBilling, PlatformAuditLogs, 
+  PlatformSecurity, PlatformAnnouncements 
+} from '../components/dashboard/PlatformModules';
 import { db } from '../services/db';
 import { User, SchoolData } from '../types';
 import { cn } from '../utils/cn';
@@ -57,6 +61,15 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
 
   // Determine Brand Color
   const brandColor = school?.theme_color || '#2563eb'; // Default to blue-600
+
+  // Logout Handler with Confirmation
+  const handleLogout = async () => {
+    if (window.confirm("Are you sure you want to log out of the system?")) {
+      await db.logout();
+      setUser(null);
+      setView('landing');
+    }
+  };
 
   const menu = useMemo(() => {
     // Professional Platform Admin Menu
@@ -113,13 +126,11 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
     if (user.role === 'platform_admin') {
       if (activeTab === 'overview') return <PlatformOverview />;
       if (activeTab === 'schools') return <SchoolsManagement />;
-      if (activeTab === 'audit') return (
-         <div className="p-12 text-center">
-            <Activity size={64} className="mx-auto text-brand-200 mb-6" />
-            <h3 className="text-xl font-bold text-gray-900">System Audit Logs</h3>
-            <p className="text-gray-500">Track all admin actions for security and compliance.</p>
-         </div>
-      );
+      if (activeTab === 'users') return <PlatformUsers />;
+      if (activeTab === 'plans') return <PlatformBilling />;
+      if (activeTab === 'audit') return <PlatformAuditLogs />;
+      if (activeTab === 'announcements') return <PlatformAnnouncements user={user} />;
+      if (activeTab === 'security') return <PlatformSecurity />;
       return <div className="p-20 text-center text-gray-400">Module {activeTab} is under development.</div>;
     }
 
@@ -180,6 +191,15 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                   );
                })}
             </div>
+             <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0 mt-auto">
+               <button 
+                 onClick={handleLogout} 
+                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-xs font-bold uppercase tracking-widest text-slate-400 justify-center"
+               >
+                 <LogOut size={18} />
+                 <span>Logout</span>
+               </button>
+            </div>
          </div>
       </div>
     );
@@ -203,12 +223,20 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
              className="p-2.5 rounded-xl shadow-lg shrink-0 transition-colors"
              style={{ backgroundColor: brandColor }}
           >
-             <School size={24} className="text-white"/>
+             {school?.logo ? (
+                <img src={school.logo} alt="Logo" className="w-6 h-6 object-contain" />
+             ) : (
+                <School size={24} className="text-white"/>
+             )}
           </div>
           {!isSidebarCollapsed && (
             <div className="min-w-0">
-               <h1 className="font-black text-white text-lg tracking-tight leading-none truncate">SMART FLOW</h1>
-               <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mt-1">Enterprise</p>
+               <h1 className="font-black text-white text-lg tracking-tight leading-none truncate" title={school?.name || 'SMART FLOW'}>
+                 {school?.name || 'SMART FLOW'}
+               </h1>
+               <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mt-1">
+                 {school?.plan || 'Enterprise'}
+               </p>
             </div>
           )}
         </div>
@@ -244,7 +272,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
 
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0">
            <button 
-             onClick={() => { setUser(null); setView('landing'); }} 
+             onClick={handleLogout} 
              className={cn("w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-xs font-bold uppercase tracking-widest text-slate-400", isSidebarCollapsed ? "justify-center" : "px-4")}
            >
              <LogOut size={18} />
@@ -274,7 +302,9 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                     {school ? school.name : 'Platform Administration'}
                  </p>
               </div>
-              <div className="md:hidden font-bold text-gray-900 text-lg">Smart Flow</div>
+              <div className="md:hidden font-bold text-gray-900 text-lg truncate max-w-[200px]">
+                {school?.name || 'Smart Flow'}
+              </div>
            </div>
 
            <div className="flex items-center gap-6">
@@ -294,10 +324,10 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-0.5">{user.role.replace('_', ' ')}</div>
                     </div>
                     <div 
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black shadow-md border-2 border-white"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black shadow-md border-2 border-white overflow-hidden"
                         style={{ backgroundColor: brandColor }}
                     >
-                       {user.full_name[0]}
+                       {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.full_name[0]}
                     </div>
                     <ChevronDown size={14} className="text-gray-400 mr-1" />
                  </button>
@@ -311,7 +341,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                       <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"><UserCircle size={16}/> Profile</button>
                       <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"><Settings size={16}/> Settings</button>
                       <div className="h-px bg-gray-50 my-1"></div>
-                      <button onClick={() => { setUser(null); setView('landing'); }} className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
+                      <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
                    </div>
                  )}
               </div>

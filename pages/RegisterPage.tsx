@@ -1,16 +1,19 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { School, Check, CheckCircle, ArrowLeft, Building2, UserCircle, Layers, AlertTriangle, CreditCard, Smartphone, UploadCloud, Image, Info, ShieldCheck, FileText, ArrowRight, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { db } from '../services/db';
 import { formatCurrency } from '../utils/formatters';
+import { Plan } from '../types';
 
 export const RegisterPage = ({ setView }: any) => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  
   const [form, setForm] = useState({ 
     name: '', 
     district: '', 
@@ -26,6 +29,11 @@ export const RegisterPage = ({ setView }: any) => {
   const [paymentFile, setPaymentFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState('');
+
+  // Fetch plans on mount
+  useEffect(() => {
+    db.getPlans().then(setPlans);
+  }, []);
 
   // Payment methods data
   const paymentMethods = [
@@ -242,11 +250,7 @@ export const RegisterPage = ({ setView }: any) => {
           {step === 3 && (
             <div className="space-y-12 animate-in slide-in-from-right fade-in duration-300">
               <div className="grid lg:grid-cols-3 gap-8 items-stretch">
-                {[
-                  { id: 'starter', p: 60000, name: "Starter Plan", desc: 'Perfect for small schools getting started', feats: ["Up to 100 students", "Nursery & primary support", "Basic reporting", "Email support", "Mobile app access"] }, 
-                  { id: 'professional', p: 130000, name: "Professional Plan", desc: 'Ideal for growing institutions', popular: true, feats: ["Up to 500 students", "All levels (Nursery to Secondary)", "Advanced analytics", "Priority support", "Custom branding", "API access"] }, 
-                  { id: 'enterprise', p: 260000, name: "Enterprise Plan", desc: 'Comprehensive solution for large schools', feats: ["Unlimited students", "All levels (Nursery to Secondary)", "White-label solution", "24/7 phone support", "Dedicated account manager", "Custom integrations"] }
-                ].map(p => (
+                {plans.map(p => (
                   <div 
                     key={p.id} 
                     onClick={() => setForm({...form, plan: p.id})} 
@@ -257,17 +261,17 @@ export const RegisterPage = ({ setView }: any) => {
                       }
                     `}
                   >
-                    {p.popular && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Most Popular</div>}
+                    {p.is_popular && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Most Popular</div>}
                     
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{p.name}</h3>
                     <div className="mb-6 flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-brand-600">{formatCurrency(p.p).split('.')[0]}</span>
+                      <span className="text-3xl font-black text-brand-600">{formatCurrency(p.price_monthly).split('.')[0]}</span>
                       <span className="text-gray-500 font-bold text-xs">FRw/month</span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-6 min-h-[40px]">{p.desc}</p>
+                    <p className="text-sm text-gray-500 mb-6 min-h-[40px]">{p.description}</p>
                     
                     <ul className="space-y-4 mb-8 flex-1">
-                      {p.feats.map((f, idx) => (
+                      {p.features.map((f, idx) => (
                          <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
                             <Check size={18} className="text-green-500 shrink-0 mt-0.5" /> <span>{f}</span>
                          </li>

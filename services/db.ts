@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, AuditLog, TimetableEntry } from '../types';
+import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, AuditLog, TimetableEntry, Plan, Coupon } from '../types';
 
 class DatabaseService {
   // --- AUTHENTICATION ---
@@ -380,12 +380,13 @@ class DatabaseService {
             { id: 'a1', title: 'Welcome to Smart School Flow', content: 'We are excited to launch our new system.', school_id: schoolId, target_role: 'all', date: new Date().toISOString().split('T')[0] }
         ];
     }
+    // Platform announcements usually have school_id = 'platform' or null, but for this structure we filter by school_id
     const { data } = await supabase.from('announcements').select('*').eq('school_id', schoolId);
     return data || [];
   }
 
   async addAnnouncement(a: Partial<Announcement>) {
-    if (a.school_id === 'demo_school_001') {
+    if (a.school_id === 'demo_school_001' || a.school_id === 'platform_001') {
         const stored = localStorage.getItem('ss_mock_announcements');
         let anns: Announcement[] = stored ? JSON.parse(stored) : [{ id: 'a1', title: 'Welcome to Smart School Flow', content: 'We are excited to launch our new system.', school_id: a.school_id!, target_role: 'all', date: new Date().toISOString().split('T')[0] }];
         anns.unshift({ ...a, id: `a_${Date.now()}`, date: new Date().toISOString().split('T')[0] } as Announcement);
@@ -417,11 +418,87 @@ class DatabaseService {
     if (error) throw error;
   }
 
+  // --- BILLING: PLANS & COUPONS (Admin Mock) ---
+  
+  async getPlans(): Promise<Plan[]> {
+    const stored = localStorage.getItem('ss_mock_plans');
+    if (stored) return JSON.parse(stored);
+    
+    // Default Initial Plans
+    const defaults: Plan[] = [
+      { id: 'starter', name: 'Starter Plan', price_monthly: 60000, price_yearly: 600000, description: 'Perfect for small schools getting started', features: ["Up to 100 students", "Nursery & primary support", "Basic reporting", "Email support", "Mobile app access"], is_popular: false, color: 'from-blue-500 to-blue-700' },
+      { id: 'professional', name: 'Professional Plan', price_monthly: 130000, price_yearly: 1300000, description: 'Ideal for growing institutions', features: ["Up to 500 students", "All levels (Nursery to Secondary)", "Advanced analytics", "Priority support", "Custom branding", "API access"], is_popular: true, color: 'from-purple-500 to-pink-600' },
+      { id: 'enterprise', name: 'Enterprise Plan', price_monthly: 260000, price_yearly: 2600000, description: 'Comprehensive solution for large schools', features: ["Unlimited students", "All levels (Nursery to Secondary)", "White-label solution", "24/7 phone support", "Dedicated account manager", "Custom integrations"], is_popular: false, color: 'from-gray-800 to-black' }
+    ];
+    localStorage.setItem('ss_mock_plans', JSON.stringify(defaults));
+    return defaults;
+  }
+
+  async savePlan(plan: Plan) {
+    const plans = await this.getPlans();
+    const existingIndex = plans.findIndex(p => p.id === plan.id);
+    if (existingIndex >= 0) {
+      plans[existingIndex] = plan;
+    } else {
+      plans.push(plan);
+    }
+    localStorage.setItem('ss_mock_plans', JSON.stringify(plans));
+  }
+
+  async deletePlan(id: string) {
+    const plans = await this.getPlans();
+    const filtered = plans.filter(p => p.id !== id);
+    localStorage.setItem('ss_mock_plans', JSON.stringify(filtered));
+  }
+
+  async getCoupons(): Promise<Coupon[]> {
+    const stored = localStorage.getItem('ss_mock_coupons');
+    if (stored) return JSON.parse(stored);
+    
+    // Default Coupons
+    const defaults: Coupon[] = [
+      { id: 'c1', code: 'WELCOME20', discount_type: 'percent', discount_value: 20, max_uses: 100, used_count: 45, status: 'active' },
+      { id: 'c2', code: 'SCHOOL50', discount_type: 'percent', discount_value: 50, max_uses: 50, used_count: 12, status: 'active', expires_at: '2025-12-31' },
+    ];
+    localStorage.setItem('ss_mock_coupons', JSON.stringify(defaults));
+    return defaults;
+  }
+
+  async saveCoupon(coupon: Coupon) {
+    const coupons = await this.getCoupons();
+    const existingIndex = coupons.findIndex(c => c.id === coupon.id);
+    if (existingIndex >= 0) {
+      coupons[existingIndex] = coupon;
+    } else {
+      coupons.push(coupon);
+    }
+    localStorage.setItem('ss_mock_coupons', JSON.stringify(coupons));
+  }
+
+  async deleteCoupon(id: string) {
+    const coupons = await this.getCoupons();
+    const filtered = coupons.filter(c => c.id !== id);
+    localStorage.setItem('ss_mock_coupons', JSON.stringify(filtered));
+  }
+
+  // --- PLATFORM ADMIN HELPERS ---
+
   async getAuditLogs(): Promise<AuditLog[]> {
       return [
           { id: '1', action: 'SCHOOL_APPROVAL', details: 'Approved Green Valley High', date: new Date().toISOString(), user: 'Platform Admin' },
           { id: '2', action: 'LOGIN', details: 'Admin login detected', date: new Date(Date.now() - 86400000).toISOString(), user: 'Platform Admin' },
           { id: '3', action: 'PLAN_UPDATE', details: 'Updated pricing for Enterprise', date: new Date(Date.now() - 172800000).toISOString(), user: 'Platform Admin' },
+          { id: '4', action: 'USER_SUSPEND', details: 'Suspended user user_123', date: new Date(Date.now() - 200000000).toISOString(), user: 'Platform Admin' },
+          { id: '5', action: 'SYSTEM_BACKUP', details: 'Automated backup completed', date: new Date(Date.now() - 300000000).toISOString(), user: 'System' },
+      ];
+  }
+
+  async getRecentTransactions() {
+      return [
+          { id: 'tx_1', school: 'Greenwood High', plan: 'Professional', amount: 130000, date: '2024-03-15', status: 'completed' },
+          { id: 'tx_2', school: 'Riverside Academy', plan: 'Starter', amount: 60000, date: '2024-03-14', status: 'completed' },
+          { id: 'tx_3', school: 'Oakridge Intl', plan: 'Enterprise', amount: 260000, date: '2024-03-12', status: 'pending' },
+          { id: 'tx_4', school: 'St. Mary\'s School', plan: 'Professional', amount: 130000, date: '2024-03-10', status: 'completed' },
       ];
   }
 }
