@@ -5,7 +5,7 @@ import {
   Calendar, Settings, Users, CreditCard, LayoutDashboard, 
   Building2, Layers, Bot, Search, Plus, Menu, 
   ChevronDown, Bell, ShieldCheck, ClipboardCheck, 
-  FileText, Megaphone, UserCircle, Activity, Lock, Clock
+  FileText, Megaphone, UserCircle, Activity, Lock, Clock, X
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Overview } from '../components/dashboard/Overview';
@@ -14,6 +14,7 @@ import { AcademicModule } from '../components/dashboard/AcademicModule';
 import { CommunicationModule } from '../components/dashboard/CommunicationModule';
 import { PlatformOverview } from '../components/dashboard/PlatformOverview';
 import { SchoolsManagement } from '../components/dashboard/SchoolsManagement';
+import { Analytics } from '../components/dashboard/Analytics';
 import { db } from '../services/db';
 import { User, SchoolData } from '../types';
 import { cn } from '../utils/cn';
@@ -105,19 +106,13 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   }, [user.role]);
 
   const renderContent = () => {
+    // Analytics for both roles
+    if (activeTab === 'analytics') return <Analytics role={user.role} />;
+    
     // Platform Admin Content Routing
     if (user.role === 'platform_admin') {
       if (activeTab === 'overview') return <PlatformOverview />;
       if (activeTab === 'schools') return <SchoolsManagement />;
-      
-      // Placeholders for other platform modules to demonstrate sidebar connectivity
-      if (activeTab === 'analytics') return (
-         <div className="p-12 text-center">
-            <BarChart3 size={64} className="mx-auto text-brand-200 mb-6" />
-            <h3 className="text-xl font-bold text-gray-900">Advanced Analytics</h3>
-            <p className="text-gray-500">System-wide performance metrics and growth charts.</p>
-         </div>
-      );
       if (activeTab === 'audit') return (
          <div className="p-12 text-center">
             <Activity size={64} className="mx-auto text-brand-200 mb-6" />
@@ -125,7 +120,6 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
             <p className="text-gray-500">Track all admin actions for security and compliance.</p>
          </div>
       );
-
       return <div className="p-20 text-center text-gray-400">Module {activeTab} is under development.</div>;
     }
 
@@ -153,18 +147,57 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
     }
   };
 
+  const MobileSidebarOverlay = () => {
+    if (isSidebarCollapsed) return null; // In this logic, collapsed means closed on mobile
+    return (
+      <div className="fixed inset-0 z-50 md:hidden flex">
+         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsSidebarCollapsed(true)} />
+         <div className="relative w-64 h-full bg-[#0f172a] shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+            {/* Mobile Sidebar Header */}
+            <div className="p-6 flex items-center justify-between border-b border-slate-800">
+               <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: brandColor }}>
+                     <School size={20} className="text-white"/>
+                  </div>
+                  <span className="font-bold text-white tracking-tight">Menu</span>
+               </div>
+               <button onClick={() => setIsSidebarCollapsed(true)} className="text-slate-400 p-1"><X size={20}/></button>
+            </div>
+            {/* Mobile Menu Items */}
+            <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+               {menu.map((m, idx) => {
+                  if (m.section) return <div key={idx} className="px-4 mt-6 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-600">{m.section}</div>;
+                  return (
+                     <button 
+                        key={m.id} 
+                        onClick={() => { setActiveTab(m.id!); setIsSidebarCollapsed(true); }}
+                        className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all", activeTab === m.id ? "text-white" : "text-slate-400")}
+                        style={activeTab === m.id ? { backgroundColor: brandColor } : {}}
+                     >
+                        <m.icon size={18} />
+                        <span className="font-bold text-sm">{m.label}</span>
+                     </button>
+                  );
+               })}
+            </div>
+         </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#f3f4f6]">
-      {/* LEFT SIDEBAR */}
+      {/* MOBILE OVERLAY SIDEBAR */}
+      <MobileSidebarOverlay />
+
+      {/* DESKTOP SIDEBAR (Hidden on mobile by default) */}
       <aside 
         className={cn(
-          "flex flex-col transition-all duration-300 shadow-2xl shrink-0 overflow-hidden text-slate-300",
-          "md:sticky md:top-0 md:h-screen", 
-          isSidebarCollapsed ? "w-0 md:w-20" : "w-full md:w-72" 
+          "hidden md:flex flex-col transition-all duration-300 shadow-2xl shrink-0 overflow-hidden text-slate-300 sticky top-0 h-screen",
+          isSidebarCollapsed ? "w-20" : "w-72" 
         )}
-        style={{ backgroundColor: '#0f172a' }} // Default Dark Slate
+        style={{ backgroundColor: '#0f172a' }}
       >
-        {/* Logo Area */}
         <div className="p-6 flex items-center gap-3 border-b border-slate-800 h-24 shrink-0">
           <div 
              className="p-2.5 rounded-xl shadow-lg shrink-0 transition-colors"
@@ -173,23 +206,18 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
              <School size={24} className="text-white"/>
           </div>
           {!isSidebarCollapsed && (
-            <div className="min-w-0 hidden md:block">
+            <div className="min-w-0">
                <h1 className="font-black text-white text-lg tracking-tight leading-none truncate">SMART FLOW</h1>
                <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mt-1">Enterprise</p>
             </div>
           )}
-          {/* Mobile Text */}
-          <div className="min-w-0 md:hidden">
-             <h1 className="font-black text-white text-lg tracking-tight leading-none truncate">SMART FLOW</h1>
-          </div>
         </div>
         
-        {/* Menu Items */}
         <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
           {menu.map((m, idx) => {
             if (m.section) {
                return !isSidebarCollapsed ? (
-                 <div key={idx} className="px-4 mt-6 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hidden md:block">
+                 <div key={idx} className="px-4 mt-6 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-600">
                     {m.section}
                  </div>
                ) : <div key={idx} className="h-4"></div>;
@@ -197,40 +225,27 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
             return (
               <button 
                 key={m.id} 
-                onClick={() => { setActiveTab(m.id!); if(window.innerWidth < 768) setIsSidebarCollapsed(true); }} 
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative", 
-                  // activeTab === m.id style handled via inline to support dynamic brand color
-                )}
+                onClick={() => setActiveTab(m.id!)} 
+                className={cn("w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative")}
                 style={activeTab === m.id ? { backgroundColor: brandColor, color: 'white' } : {}}
                 title={isSidebarCollapsed ? m.label : ''}
               >
                 <m.icon 
                    size={20} 
-                   className={cn(
-                       "shrink-0 transition-colors", 
-                       activeTab === m.id ? "text-white" : "text-slate-500 group-hover:text-white"
-                   )} 
+                   className={cn("shrink-0 transition-colors", activeTab === m.id ? "text-white" : "text-slate-500 group-hover:text-white")} 
                 />
                 <span className={cn("font-bold text-xs tracking-wide truncate", isSidebarCollapsed ? "hidden" : "block", activeTab === m.id ? "text-white" : "text-slate-400 group-hover:text-white")}>
                   {m.label}
                 </span>
-                {activeTab === m.id && !isSidebarCollapsed && (
-                   <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] md:block hidden" />
-                )}
               </button>
             );
           })}
         </div>
 
-        {/* Footer / Logout */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0">
            <button 
              onClick={() => { setUser(null); setView('landing'); }} 
-             className={cn(
-               "w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-xs font-bold uppercase tracking-widest text-slate-400", 
-               isSidebarCollapsed ? "justify-center" : "px-4"
-             )}
+             className={cn("w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-xs font-bold uppercase tracking-widest text-slate-400", isSidebarCollapsed ? "justify-center" : "px-4")}
            >
              <LogOut size={18} />
              <span className={cn(isSidebarCollapsed ? "hidden" : "block")}>Logout</span>
@@ -239,12 +254,13 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
       </aside>
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
         
         {/* TOP NAVBAR */}
-        <header className="bg-white border-b border-gray-200 h-20 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between shadow-sm/50 backdrop-blur-sm bg-white/90">
+        <header className="bg-white border-b border-gray-200 h-20 px-4 md:px-8 flex items-center justify-between shrink-0">
            <div className="flex items-center gap-4">
               <button 
+                // On mobile this opens the overlay (sets collapsed to false). On desktop it toggles width.
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
                 className="p-2.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"
               >
@@ -258,12 +274,11 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                     {school ? school.name : 'Platform Administration'}
                  </p>
               </div>
+              <div className="md:hidden font-bold text-gray-900 text-lg">Smart Flow</div>
            </div>
 
            <div className="flex items-center gap-6">
-              
               <ProfessionalClock />
-
               <button className="relative p-2.5 rounded-full hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition-colors">
                  <Bell size={20} />
                  <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -287,7 +302,6 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                     <ChevronDown size={14} className="text-gray-400 mr-1" />
                  </button>
 
-                 {/* Dropdown */}
                  {profileOpen && (
                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-in fade-in slide-in-from-top-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-50 mb-1">
@@ -305,7 +319,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
         </header>
 
         {/* PAGE CONTENT */}
-        <main className="p-6 md:p-10 w-full overflow-auto flex-1 h-[calc(100vh-5rem)]">
+        <main className="p-6 md:p-10 w-full overflow-y-auto flex-1 bg-[#f3f4f6]">
            {renderContent()}
         </main>
       </div>

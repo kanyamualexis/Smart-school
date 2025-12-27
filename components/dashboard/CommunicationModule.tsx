@@ -4,17 +4,36 @@ import { User, Announcement, Material } from '../../types';
 import { db } from '../../services/db';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Modal } from '../ui/Modal';
 import { Megaphone, FileText, Download, Plus, UploadCloud } from 'lucide-react';
 
 export const CommunicationModule = ({ user, section }: { user: User, section: string }) => {
-  const [activeTab, setActiveTab] = useState('announcements');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newAnn, setNewAnn] = useState({ title: '', content: '', target: 'all' });
 
   useEffect(() => {
+    fetchData();
+  }, [user.school_id]);
+
+  const fetchData = async () => {
     db.getAnnouncements(user.school_id).then(setAnnouncements);
     db.getMaterials(user.school_id).then(setMaterials);
-  }, [user.school_id]);
+  };
+
+  const handleAddAnnouncement = async () => {
+    if (!newAnn.title || !newAnn.content) return;
+    await db.addAnnouncement({
+        title: newAnn.title,
+        content: newAnn.content,
+        target_role: newAnn.target as any,
+        school_id: user.school_id
+    });
+    await fetchData();
+    setModalOpen(false);
+    setNewAnn({ title: '', content: '', target: 'all' });
+  };
 
   if (section === 'materials') {
      return (
@@ -51,7 +70,7 @@ export const CommunicationModule = ({ user, section }: { user: User, section: st
        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
           <div className="flex justify-between items-center mb-8">
              <h2 className="text-xl font-bold">School Announcements</h2>
-             <Button><Plus size={16}/> New Announcement</Button>
+             <Button onClick={() => setModalOpen(true)}><Plus size={16}/> New Announcement</Button>
           </div>
           <div className="space-y-4">
              {announcements.map(a => (
@@ -74,6 +93,32 @@ export const CommunicationModule = ({ user, section }: { user: User, section: st
              )}
           </div>
        </div>
+
+       {modalOpen && (
+          <Modal title="Post New Announcement" onClose={() => setModalOpen(false)}>
+             <div className="space-y-4">
+                 <Input label="Title" value={newAnn.title} onChange={(e:any) => setNewAnn({...newAnn, title: e.target.value})} placeholder="Announcement Title" />
+                 <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Content</label>
+                    <textarea 
+                        className="w-full p-3 border rounded-lg h-32 focus:ring-2 focus:ring-brand-500 outline-none" 
+                        value={newAnn.content}
+                        onChange={(e) => setNewAnn({...newAnn, content: e.target.value})}
+                        placeholder="Write your announcement here..."
+                    ></textarea>
+                 </div>
+                 <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Target Audience</label>
+                    <select className="w-full p-3 border rounded-lg bg-gray-50" value={newAnn.target} onChange={e => setNewAnn({...newAnn, target: e.target.value})}>
+                       <option value="all">All Users</option>
+                       <option value="teachers">Teachers Only</option>
+                       <option value="parents">Parents Only</option>
+                    </select>
+                 </div>
+                 <Button className="w-full mt-2" onClick={handleAddAnnouncement}>Post Announcement</Button>
+             </div>
+          </Modal>
+       )}
     </div>
   );
 };

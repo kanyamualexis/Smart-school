@@ -109,3 +109,13 @@ export interface AuditLog {
   date: string;
   user: string;
 }
+
+export interface TimetableEntry {
+  id: string;
+  school_id: string;
+  class_name: string;
+  subject: string;
+  day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
+  start_time: string;
+  end_time: string;
+}

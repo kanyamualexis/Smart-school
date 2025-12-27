@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { ManageTeachers } from './ManageTeachers';
 import { ManageStudents } from './ManageStudents';
 import { SchoolSettings } from './SchoolSettings';
-import { User, SchoolData } from '../../types';
+import { User, SchoolData, Parent } from '../../types';
 import { db } from '../../services/db';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { ShieldCheck, UserPlus, CreditCard, Lock, Users } from 'lucide-react';
+import { Modal } from '../ui/Modal';
+import { ShieldCheck, UserPlus, CreditCard, Lock, Users, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 export const AdminModule = ({ user, section }: { user: User, section: string }) => {
@@ -43,14 +44,7 @@ const UserManagement = ({ user }: { user: User }) => {
       <div className="bg-white p-1 rounded-2xl border border-gray-100 shadow-sm min-h-[400px]">
          {activeTab === 'teachers' && <ManageTeachers user={user} />}
          {activeTab === 'students' && <ManageStudents user={user} />}
-         {activeTab === 'parents' && (
-           <div className="p-10 text-center text-gray-400">
-             <Users size={48} className="mx-auto mb-4 opacity-20"/>
-             <h3 className="text-lg font-bold text-gray-900">Parent Portal Management</h3>
-             <p className="text-sm">Manage parent accounts and link them to students here.</p>
-             <Button className="mt-6" variant="outline"><UserPlus size={16}/> Add Parent</Button>
-           </div>
-         )}
+         {activeTab === 'parents' && <ManageParents user={user} />}
          {activeTab === 'admins' && (
            <div className="p-10 text-center text-gray-400">
              <ShieldCheck size={48} className="mx-auto mb-4 opacity-20"/>
@@ -59,6 +53,68 @@ const UserManagement = ({ user }: { user: User }) => {
            </div>
          )}
       </div>
+    </div>
+  );
+};
+
+const ManageParents = ({ user }: { user: User }) => {
+  const [parents, setParents] = useState<Parent[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newParent, setNewParent] = useState({ full_name: '', email: '', phone: '' });
+
+  useEffect(() => {
+    fetchParents();
+  }, [user.school_id]);
+
+  const fetchParents = async () => {
+    const data = await db.getParents(user.school_id);
+    setParents(data);
+  };
+
+  const handleAddParent = async () => {
+    if (!newParent.full_name || !newParent.email) return;
+    await db.addParent({ ...newParent, school_id: user.school_id, student_ids: [] });
+    await fetchParents();
+    setModalOpen(false);
+    setNewParent({ full_name: '', email: '', phone: '' });
+  };
+
+  return (
+    <div className="p-6">
+       <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold">Parent Directory</h3>
+          <Button onClick={() => setModalOpen(true)}><UserPlus size={16}/> Add Parent</Button>
+       </div>
+       
+       <div className="overflow-x-auto">
+         <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-[10px] tracking-widest">
+               <tr><th className="p-4">Name</th><th className="p-4">Email</th><th className="p-4">Phone</th><th className="p-4">Actions</th></tr>
+            </thead>
+            <tbody className="divide-y">
+               {parents.map(p => (
+                  <tr key={p.id} className="hover:bg-gray-50">
+                     <td className="p-4 font-bold text-gray-900">{p.full_name}</td>
+                     <td className="p-4 text-gray-500">{p.email}</td>
+                     <td className="p-4 text-gray-500">{p.phone}</td>
+                     <td className="p-4"><button className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={16}/></button></td>
+                  </tr>
+               ))}
+               {parents.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-gray-400">No parents registered yet.</td></tr>}
+            </tbody>
+         </table>
+       </div>
+
+       {modalOpen && (
+          <Modal title="Add New Parent" onClose={() => setModalOpen(false)}>
+             <div className="space-y-4">
+                <Input label="Full Name" value={newParent.full_name} onChange={(e:any) => setNewParent({...newParent, full_name: e.target.value})} />
+                <Input label="Email Address" type="email" value={newParent.email} onChange={(e:any) => setNewParent({...newParent, email: e.target.value})} />
+                <Input label="Phone Number" value={newParent.phone} onChange={(e:any) => setNewParent({...newParent, phone: e.target.value})} />
+                <Button className="w-full mt-4" onClick={handleAddParent}>Register Parent</Button>
+             </div>
+          </Modal>
+       )}
     </div>
   );
 };

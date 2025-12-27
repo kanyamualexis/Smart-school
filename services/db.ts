@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, Attendance, AuditLog } from '../types';
+import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, AuditLog, TimetableEntry } from '../types';
 
 class DatabaseService {
   // --- AUTHENTICATION ---
@@ -128,13 +128,10 @@ class DatabaseService {
   }
 
   async getCurrentUser(): Promise<User | null> {
-    // 1. Check Mock Session first
     const mock = localStorage.getItem('ss_mock_session');
     if (mock) {
         return JSON.parse(mock) as User;
     }
-
-    // 2. Check Real Supabase Session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return null;
 
@@ -161,34 +158,26 @@ class DatabaseService {
   
   async getSchool(id: string): Promise<SchoolData | null> {
      let schoolData: SchoolData | null = null;
-
-     // Mock for Platform Admin
      if (id === 'platform_001') {
         schoolData = { id: 'platform', name: 'Platform Administration', district: 'Headquarters', plan: 'enterprise', has_nursery: false, status: 'active', theme_color: '#1e3a8a' };
-     } 
-     // Mock for Demo School
-     else if (id === 'demo_school_001') {
+     } else if (id === 'demo_school_001') {
         schoolData = { id: 'demo_school_001', name: 'Demo High School', district: 'Kigali | 0780000000 | Downtown', plan: 'professional', has_nursery: true, status: 'active', theme_color: '#0ea5e9' };
-     } 
-     else {
+     } else {
         const { data, error } = await supabase.from('schools').select('*').eq('id', id).single();
         if (error) console.error(error);
         schoolData = data;
      }
 
-     // Overlay local overrides (For persistent demo updates like Logo/Theme)
      if (schoolData) {
          const localUpdates = localStorage.getItem(`ss_school_updates_${id}`);
          if (localUpdates) {
              schoolData = { ...schoolData, ...JSON.parse(localUpdates) };
          }
      }
-
      return schoolData;
   }
 
   async updateSchool(id: string, data: Partial<SchoolData>) {
-    // Mock update persistence for demo schools
     if (id === 'demo_school_001' || id === 'platform_001') {
         const existingUpdates = JSON.parse(localStorage.getItem(`ss_school_updates_${id}`) || '{}');
         const newUpdates = { ...existingUpdates, ...data };
@@ -203,8 +192,6 @@ class DatabaseService {
     if (schoolId === 'demo_school_001') {
         const stored = localStorage.getItem('ss_mock_users');
         let users: User[] = stored ? JSON.parse(stored) : [];
-        
-        // Add default mock teachers if empty
         if (users.filter(u => u.role === 'teacher').length === 0) {
             users.push(
                 { id: 't1', full_name: 'Tr. Alice', email: 'alice@demo.com', role: 'teacher', school_id: schoolId, assigned_class: 'P1', assigned_subject: 'Mathematics' },
@@ -212,7 +199,6 @@ class DatabaseService {
             );
             localStorage.setItem('ss_mock_users', JSON.stringify(users));
         }
-
         if (role) return users.filter(u => u.role === role);
         return users;
     }
@@ -257,7 +243,6 @@ class DatabaseService {
 
   async getStudents(schoolId: string, classGrade?: string): Promise<Student[]> {
     if (schoolId === 'demo_school_001') {
-         // Mock students
          const stored = localStorage.getItem('ss_mock_students');
          let students: Student[] = stored ? JSON.parse(stored) : [
              { id: 's1', full_name: 'Student One', index_number: '2024/001', class_grade: 'P1', school_id: schoolId },
@@ -289,9 +274,24 @@ class DatabaseService {
   }
 
   async getParents(schoolId: string): Promise<Parent[]> { 
-    if (schoolId === 'demo_school_001') return [{ id: 'p1', full_name: 'Parent One', email: 'p1@demo.com', phone: '0788888888', school_id: schoolId, student_ids: [] }];
+    if (schoolId === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_parents');
+        return stored ? JSON.parse(stored) : [{ id: 'p1', full_name: 'Parent One', email: 'p1@demo.com', phone: '0788888888', school_id: schoolId, student_ids: [] }];
+    }
     const { data } = await supabase.from('parents').select('*').eq('school_id', schoolId);
     return data || [];
+  }
+
+  async addParent(p: Partial<Parent>) {
+    if (p.school_id === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_parents');
+        let parents: Parent[] = stored ? JSON.parse(stored) : [{ id: 'p1', full_name: 'Parent One', email: 'p1@demo.com', phone: '0788888888', school_id: p.school_id!, student_ids: [] }];
+        parents.push({ ...p, id: `p_${Date.now()}` } as Parent);
+        localStorage.setItem('ss_mock_parents', JSON.stringify(parents));
+        return;
+    }
+    const { error } = await supabase.from('parents').insert(p);
+    if (error) throw error;
   }
 
   async getClasses(schoolId: string): Promise<ClassGrade[]> { 
@@ -361,15 +361,9 @@ class DatabaseService {
       .eq('school_id', schoolId)
       .eq('index_number', indexNumber)
       .single();
-    
     if (!student) return null;
-
     const { data: school } = await supabase.from('schools').select('*').eq('id', schoolId).single();
-
-    const { data: marks } = await supabase.from('marks')
-      .select('*')
-      .eq('student_id', student.id);
-
+    const { data: marks } = await supabase.from('marks').select('*').eq('student_id', student.id);
     return { student, school, marks: marks || [] };
   }
 
@@ -380,11 +374,47 @@ class DatabaseService {
   }
 
   async getAnnouncements(schoolId: string): Promise<Announcement[]> { 
-    if (schoolId === 'demo_school_001') return [
-        { id: 'a1', title: 'Welcome to Smart School Flow', content: 'We are excited to launch our new system.', school_id: schoolId, target_role: 'all', date: new Date().toISOString().split('T')[0] }
-    ];
+    if (schoolId === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_announcements');
+        return stored ? JSON.parse(stored) : [
+            { id: 'a1', title: 'Welcome to Smart School Flow', content: 'We are excited to launch our new system.', school_id: schoolId, target_role: 'all', date: new Date().toISOString().split('T')[0] }
+        ];
+    }
     const { data } = await supabase.from('announcements').select('*').eq('school_id', schoolId);
     return data || [];
+  }
+
+  async addAnnouncement(a: Partial<Announcement>) {
+    if (a.school_id === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_announcements');
+        let anns: Announcement[] = stored ? JSON.parse(stored) : [{ id: 'a1', title: 'Welcome to Smart School Flow', content: 'We are excited to launch our new system.', school_id: a.school_id!, target_role: 'all', date: new Date().toISOString().split('T')[0] }];
+        anns.unshift({ ...a, id: `a_${Date.now()}`, date: new Date().toISOString().split('T')[0] } as Announcement);
+        localStorage.setItem('ss_mock_announcements', JSON.stringify(anns));
+        return;
+    }
+    const { error } = await supabase.from('announcements').insert(a);
+    if (error) throw error;
+  }
+
+  async getTimetable(schoolId: string): Promise<TimetableEntry[]> {
+    if (schoolId === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_timetable');
+        return stored ? JSON.parse(stored) : [];
+    }
+    const { data } = await supabase.from('timetable').select('*').eq('school_id', schoolId);
+    return data || [];
+  }
+
+  async addTimetableEntry(t: Partial<TimetableEntry>) {
+    if (t.school_id === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_timetable');
+        let entries: TimetableEntry[] = stored ? JSON.parse(stored) : [];
+        entries.push({ ...t, id: `tt_${Date.now()}` } as TimetableEntry);
+        localStorage.setItem('ss_mock_timetable', JSON.stringify(entries));
+        return;
+    }
+    const { error } = await supabase.from('timetable').insert(t);
+    if (error) throw error;
   }
 
   async getAuditLogs(): Promise<AuditLog[]> {
