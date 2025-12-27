@@ -15,6 +15,7 @@ export interface SchoolData {
   created_at?: string;
   academic_year?: string;
   admin_email?: string; // For display in pending table
+  theme_color?: string; // Hex code for school branding
 }
 
 export interface User {

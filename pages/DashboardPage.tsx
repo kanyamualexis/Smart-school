@@ -5,7 +5,7 @@ import {
   Calendar, Settings, Users, CreditCard, LayoutDashboard, 
   Building2, Layers, Bot, Search, Plus, Menu, 
   ChevronDown, Bell, ShieldCheck, ClipboardCheck, 
-  FileText, Megaphone, UserCircle, Activity, Lock
+  FileText, Megaphone, UserCircle, Activity, Lock, Clock
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Overview } from '../components/dashboard/Overview';
@@ -18,6 +18,30 @@ import { db } from '../services/db';
 import { User, SchoolData } from '../types';
 import { cn } from '../utils/cn';
 
+// Helper component for live clock
+const ProfessionalClock = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-gray-700 shadow-sm hidden md:flex">
+      <Clock size={16} className="text-gray-400" />
+      <div className="flex flex-col items-end leading-none">
+        <span className="text-sm font-black tracking-widest tabular-nums">
+           {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </span>
+        <span className="text-[10px] font-bold uppercase text-gray-400">
+           {time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser: any, setView: any }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -29,6 +53,9 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
         db.getSchool(user.school_id).then(setSchool);
     }
   }, [user.school_id]);
+
+  // Determine Brand Color
+  const brandColor = school?.theme_color || '#2563eb'; // Default to blue-600
 
   const menu = useMemo(() => {
     // Professional Platform Admin Menu
@@ -129,14 +156,20 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#f3f4f6]">
       {/* LEFT SIDEBAR */}
-      <aside className={cn(
-        "bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 shadow-2xl shrink-0 overflow-hidden",
-        "md:sticky md:top-0 md:h-screen", // Sticky only on desktop
-        isSidebarCollapsed ? "w-0 md:w-20" : "w-full md:w-72" // Full width on mobile when open, controlled by layout
-      )}>
+      <aside 
+        className={cn(
+          "flex flex-col transition-all duration-300 shadow-2xl shrink-0 overflow-hidden text-slate-300",
+          "md:sticky md:top-0 md:h-screen", 
+          isSidebarCollapsed ? "w-0 md:w-20" : "w-full md:w-72" 
+        )}
+        style={{ backgroundColor: '#0f172a' }} // Default Dark Slate
+      >
         {/* Logo Area */}
         <div className="p-6 flex items-center gap-3 border-b border-slate-800 h-24 shrink-0">
-          <div className="bg-brand-600 p-2.5 rounded-xl shadow-lg shadow-brand-900/50 shrink-0">
+          <div 
+             className="p-2.5 rounded-xl shadow-lg shrink-0 transition-colors"
+             style={{ backgroundColor: brandColor }}
+          >
              <School size={24} className="text-white"/>
           </div>
           {!isSidebarCollapsed && (
@@ -167,14 +200,19 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                 onClick={() => { setActiveTab(m.id!); if(window.innerWidth < 768) setIsSidebarCollapsed(true); }} 
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative", 
-                  activeTab === m.id 
-                    ? "bg-brand-600 text-white shadow-lg shadow-brand-900/20" 
-                    : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                  // activeTab === m.id style handled via inline to support dynamic brand color
                 )}
+                style={activeTab === m.id ? { backgroundColor: brandColor, color: 'white' } : {}}
                 title={isSidebarCollapsed ? m.label : ''}
               >
-                <m.icon size={20} className={cn("shrink-0 transition-colors", activeTab === m.id ? "text-white" : "group-hover:text-white")} />
-                <span className={cn("font-bold text-xs tracking-wide truncate", isSidebarCollapsed ? "hidden" : "block")}>
+                <m.icon 
+                   size={20} 
+                   className={cn(
+                       "shrink-0 transition-colors", 
+                       activeTab === m.id ? "text-white" : "text-slate-500 group-hover:text-white"
+                   )} 
+                />
+                <span className={cn("font-bold text-xs tracking-wide truncate", isSidebarCollapsed ? "hidden" : "block", activeTab === m.id ? "text-white" : "text-slate-400 group-hover:text-white")}>
                   {m.label}
                 </span>
                 {activeTab === m.id && !isSidebarCollapsed && (
@@ -223,12 +261,10 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
            </div>
 
            <div className="flex items-center gap-6">
-              <div className="hidden md:flex items-center bg-gray-50 rounded-full px-4 py-2.5 border border-gray-100 focus-within:ring-2 focus-within:ring-brand-100 focus-within:border-brand-300 transition-all w-64">
-                 <Search size={16} className="text-gray-400 mr-3" />
-                 <input className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-gray-400" placeholder="Search..." />
-              </div>
+              
+              <ProfessionalClock />
 
-              <button className="relative p-2.5 rounded-full hover:bg-gray-50 text-gray-400 hover:text-brand-600 transition-colors">
+              <button className="relative p-2.5 rounded-full hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition-colors">
                  <Bell size={20} />
                  <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
               </button>
@@ -242,7 +278,10 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                        <div className="text-sm font-bold text-gray-900 leading-none">{user.full_name}</div>
                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-0.5">{user.role.replace('_', ' ')}</div>
                     </div>
-                    <div className="w-9 h-9 bg-brand-600 rounded-full flex items-center justify-center text-white font-black shadow-md border-2 border-white">
+                    <div 
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black shadow-md border-2 border-white"
+                        style={{ backgroundColor: brandColor }}
+                    >
                        {user.full_name[0]}
                     </div>
                     <ChevronDown size={14} className="text-gray-400 mr-1" />
@@ -255,8 +294,8 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                          <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Signed in as</p>
                          <p className="text-sm font-bold text-gray-900 truncate">{user.email}</p>
                       </div>
-                      <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-brand-600 flex items-center gap-2"><UserCircle size={16}/> Profile</button>
-                      <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-brand-600 flex items-center gap-2"><Settings size={16}/> Settings</button>
+                      <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"><UserCircle size={16}/> Profile</button>
+                      <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"><Settings size={16}/> Settings</button>
                       <div className="h-px bg-gray-50 my-1"></div>
                       <button onClick={() => { setUser(null); setView('landing'); }} className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
                    </div>
