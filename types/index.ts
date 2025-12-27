@@ -27,6 +27,9 @@ export interface User {
   password?: string;
   avatar?: string;
   phone?: string;
+  // Specific for Teachers
+  assigned_class?: string;
+  assigned_subject?: string;
 }
 
 export interface Student {

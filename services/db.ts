@@ -160,21 +160,39 @@ class DatabaseService {
   }
   
   async getSchool(id: string): Promise<SchoolData | null> {
-     // Mock for Platform Admin
-     if (id === 'platform_001') return { id: 'platform', name: 'Platform Administration', district: 'Headquarters', plan: 'enterprise', has_nursery: false, status: 'active', theme_color: '#1e3a8a' };
-     
-     // Mock for Demo School
-     if (id === 'demo_school_001') return { id: 'demo_school_001', name: 'Demo High School', district: 'Kigali | 0780000000 | Downtown', plan: 'professional', has_nursery: true, status: 'active', theme_color: '#0ea5e9' };
+     let schoolData: SchoolData | null = null;
 
-     const { data, error } = await supabase.from('schools').select('*').eq('id', id).single();
-     if (error) console.error(error);
-     return data;
+     // Mock for Platform Admin
+     if (id === 'platform_001') {
+        schoolData = { id: 'platform', name: 'Platform Administration', district: 'Headquarters', plan: 'enterprise', has_nursery: false, status: 'active', theme_color: '#1e3a8a' };
+     } 
+     // Mock for Demo School
+     else if (id === 'demo_school_001') {
+        schoolData = { id: 'demo_school_001', name: 'Demo High School', district: 'Kigali | 0780000000 | Downtown', plan: 'professional', has_nursery: true, status: 'active', theme_color: '#0ea5e9' };
+     } 
+     else {
+        const { data, error } = await supabase.from('schools').select('*').eq('id', id).single();
+        if (error) console.error(error);
+        schoolData = data;
+     }
+
+     // Overlay local overrides (For persistent demo updates like Logo/Theme)
+     if (schoolData) {
+         const localUpdates = localStorage.getItem(`ss_school_updates_${id}`);
+         if (localUpdates) {
+             schoolData = { ...schoolData, ...JSON.parse(localUpdates) };
+         }
+     }
+
+     return schoolData;
   }
 
   async updateSchool(id: string, data: Partial<SchoolData>) {
-    // Mock update for demo
-    if (id === 'demo_school_001') {
-        console.log("Mock update school settings:", data);
+    // Mock update persistence for demo schools
+    if (id === 'demo_school_001' || id === 'platform_001') {
+        const existingUpdates = JSON.parse(localStorage.getItem(`ss_school_updates_${id}`) || '{}');
+        const newUpdates = { ...existingUpdates, ...data };
+        localStorage.setItem(`ss_school_updates_${id}`, JSON.stringify(newUpdates));
         return;
     }
     const { error } = await supabase.from('schools').update(data).eq('id', id);
@@ -183,12 +201,20 @@ class DatabaseService {
 
   async getUsers(schoolId: string, role?: Role): Promise<User[]> { 
     if (schoolId === 'demo_school_001') {
-        // Mock data for demo
-        if (role === 'teacher') return [
-            { id: 't1', full_name: 'Tr. Alice', email: 'alice@demo.com', role: 'teacher', school_id: schoolId },
-            { id: 't2', full_name: 'Tr. Bob', email: 'bob@demo.com', role: 'teacher', school_id: schoolId }
-        ];
-        return [];
+        const stored = localStorage.getItem('ss_mock_users');
+        let users: User[] = stored ? JSON.parse(stored) : [];
+        
+        // Add default mock teachers if empty
+        if (users.filter(u => u.role === 'teacher').length === 0) {
+            users.push(
+                { id: 't1', full_name: 'Tr. Alice', email: 'alice@demo.com', role: 'teacher', school_id: schoolId, assigned_class: 'P1', assigned_subject: 'Mathematics' },
+                { id: 't2', full_name: 'Tr. Bob', email: 'bob@demo.com', role: 'teacher', school_id: schoolId, assigned_class: 'P2', assigned_subject: 'English' }
+            );
+            localStorage.setItem('ss_mock_users', JSON.stringify(users));
+        }
+
+        if (role) return users.filter(u => u.role === role);
+        return users;
     }
     let query = supabase.from('users').select('*');
     if (schoolId) query = query.eq('school_id', schoolId);
@@ -204,13 +230,27 @@ class DatabaseService {
   }
 
   async addUser(u: Partial<User>) {
-    if (u.school_id === 'demo_school_001') return; // Mock add
+    if (u.school_id === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_users');
+        let users: User[] = stored ? JSON.parse(stored) : [];
+        users.push({ ...u, id: `u_${Date.now()}` } as User);
+        localStorage.setItem('ss_mock_users', JSON.stringify(users));
+        return;
+    }
     const { error } = await supabase.from('users').insert(u);
     if (error) throw error;
   }
 
   async deleteUser(id: string) { 
-    if (id.startsWith('t')) return; // Mock delete
+    if (id.startsWith('t') || id.startsWith('u_')) {
+        const stored = localStorage.getItem('ss_mock_users');
+        if (stored) {
+            let users: User[] = JSON.parse(stored);
+            users = users.filter(u => u.id !== id);
+            localStorage.setItem('ss_mock_users', JSON.stringify(users));
+        }
+        return; 
+    }
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) console.error(error);
   }
@@ -218,7 +258,8 @@ class DatabaseService {
   async getStudents(schoolId: string, classGrade?: string): Promise<Student[]> {
     if (schoolId === 'demo_school_001') {
          // Mock students
-         let students = [
+         const stored = localStorage.getItem('ss_mock_students');
+         let students: Student[] = stored ? JSON.parse(stored) : [
              { id: 's1', full_name: 'Student One', index_number: '2024/001', class_grade: 'P1', school_id: schoolId },
              { id: 's2', full_name: 'Student Two', index_number: '2024/002', class_grade: 'P2', school_id: schoolId }
          ];
@@ -233,7 +274,16 @@ class DatabaseService {
   }
 
   async addStudent(s: Partial<Student>) { 
-    if (s.school_id === 'demo_school_001') return;
+    if (s.school_id === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_students');
+        let students: Student[] = stored ? JSON.parse(stored) : [
+             { id: 's1', full_name: 'Student One', index_number: '2024/001', class_grade: 'P1', school_id: s.school_id! },
+             { id: 's2', full_name: 'Student Two', index_number: '2024/002', class_grade: 'P2', school_id: s.school_id! }
+        ];
+        students.push({ ...s, id: `s_${Date.now()}` } as Student);
+        localStorage.setItem('ss_mock_students', JSON.stringify(students));
+        return;
+    }
     const { error } = await supabase.from('students').insert(s);
     if (error) throw error;
   }
@@ -245,18 +295,32 @@ class DatabaseService {
   }
 
   async getClasses(schoolId: string): Promise<ClassGrade[]> { 
-    if (schoolId === 'demo_school_001') return [
-        { id: 'c1', name: 'P1', school_id: schoolId },
-        { id: 'c2', name: 'P2', school_id: schoolId },
-        { id: 'c3', name: 'S1', school_id: schoolId }
-    ];
+    if (schoolId === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_classes');
+        let classes: ClassGrade[] = stored ? JSON.parse(stored) : [
+            { id: 'c1', name: 'P1', school_id: schoolId },
+            { id: 'c2', name: 'P2', school_id: schoolId },
+            { id: 'c3', name: 'S1', school_id: schoolId }
+        ];
+        return classes;
+    }
     const { data, error } = await supabase.from('classes').select('*').eq('school_id', schoolId);
     if (error) console.error(error);
     return data || [];
   }
 
   async addClass(c: Partial<ClassGrade>) { 
-    if (c.school_id === 'demo_school_001') return;
+    if (c.school_id === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_classes');
+        let classes: ClassGrade[] = stored ? JSON.parse(stored) : [
+            { id: 'c1', name: 'P1', school_id: c.school_id! },
+            { id: 'c2', name: 'P2', school_id: c.school_id! },
+            { id: 'c3', name: 'S1', school_id: c.school_id! }
+        ];
+        classes.push({ ...c, id: `c_${Date.now()}` } as ClassGrade);
+        localStorage.setItem('ss_mock_classes', JSON.stringify(classes));
+        return;
+    }
     const { error } = await supabase.from('classes').insert(c);
     if (error) throw error;
   }

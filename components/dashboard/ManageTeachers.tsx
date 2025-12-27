@@ -1,45 +1,61 @@
+
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Trash2, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, BookOpen, GraduationCap } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 import { db } from '../../services/db';
-import { User } from '../../types';
+import { User, ClassGrade, Subject } from '../../types';
 
 export const ManageTeachers = ({ user }: { user: User }) => {
   const [teachers, setTeachers] = useState<User[]>([]);
+  const [classes, setClasses] = useState<ClassGrade[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({ name: '', email: '' });
+  
+  const [newTeacher, setNewTeacher] = useState({ 
+    name: '', 
+    email: '', 
+    assigned_class: '', 
+    assigned_subject: '' 
+  });
 
-  const fetchTeachers = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const data = await db.getUsers(user.school_id, 'teacher');
-    setTeachers(data);
+    const [tData, cData, sData] = await Promise.all([
+      db.getUsers(user.school_id, 'teacher'),
+      db.getClasses(user.school_id),
+      db.getSubjects(user.school_id)
+    ]);
+    setTeachers(tData);
+    setClasses(cData);
+    setSubjects(sData);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchTeachers();
+    fetchData();
   }, [user.school_id]);
 
   const handleAdd = async () => {
     if (!newTeacher.name || !newTeacher.email) return;
     setAdding(true);
     try {
-      // In a real production app, this should call an Edge Function to create an Auth user.
-      // Here we insert the profile so the Admin sees them. 
       await db.addUser({ 
         school_id: user.school_id, 
         role: 'teacher', 
         full_name: newTeacher.name, 
         email: newTeacher.email,
-        password: '123' // Placeholder
+        password: '123', // Default password
+        assigned_class: newTeacher.assigned_class,
+        assigned_subject: newTeacher.assigned_subject
       });
-      await fetchTeachers();
+      await fetchData();
       setModalOpen(false);
-      setNewTeacher({ name: '', email: '' });
+      setNewTeacher({ name: '', email: '', assigned_class: '', assigned_subject: '' });
     } catch (e) {
       alert('Failed to add teacher');
       console.error(e);
@@ -50,7 +66,7 @@ export const ManageTeachers = ({ user }: { user: User }) => {
   const handleDelete = async (id: string) => {
     if (confirm('Remove this teacher?')) {
        await db.deleteUser(id);
-       fetchTeachers();
+       fetchData();
     }
   };
 
@@ -66,20 +82,40 @@ export const ManageTeachers = ({ user }: { user: User }) => {
         ) : (
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-500 border-b">
-            <tr><th className="p-4">Name</th><th className="p-4">Email</th><th className="p-4">Actions</th></tr>
+            <tr className="text-xs font-black uppercase tracking-widest">
+              <th className="p-4">Name</th>
+              <th className="p-4">Email</th>
+              <th className="p-4">Class Teacher</th>
+              <th className="p-4">Primary Subject</th>
+              <th className="p-4">Actions</th>
+            </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y text-sm">
             {teachers.map(t => (
-              <tr key={t.id}>
-                <td className="p-4 font-medium">{t.full_name}</td>
+              <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                <td className="p-4 font-bold text-gray-900">{t.full_name}</td>
                 <td className="p-4 text-gray-500">{t.email}</td>
                 <td className="p-4">
-                  <button onClick={() => handleDelete(t.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors"><Trash2 size={16} /></button>
+                  {t.assigned_class ? (
+                    <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">
+                      <GraduationCap size={12}/> {t.assigned_class}
+                    </span>
+                  ) : <span className="text-gray-400 text-xs italic">None</span>}
+                </td>
+                <td className="p-4">
+                  {t.assigned_subject ? (
+                    <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-bold">
+                      <BookOpen size={12}/> {t.assigned_subject}
+                    </span>
+                  ) : <span className="text-gray-400 text-xs italic">None</span>}
+                </td>
+                <td className="p-4">
+                  <button onClick={() => handleDelete(t.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Remove"><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
             {teachers.length === 0 && (
-                <tr><td colSpan={3} className="p-8 text-center text-gray-400">No teachers found. Add one to get started.</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-gray-400">No teachers found. Add one to get started.</td></tr>
             )}
           </tbody>
         </table>
@@ -87,10 +123,39 @@ export const ManageTeachers = ({ user }: { user: User }) => {
       </div>
       {modalOpen && (
         <Modal title="Add New Teacher" onClose={() => setModalOpen(false)}>
-          <Input label="Full Name" value={newTeacher.name} onChange={(e:any) => setNewTeacher({...newTeacher, name: e.target.value})} />
-          <Input label="Email" value={newTeacher.email} onChange={(e:any) => setNewTeacher({...newTeacher, email: e.target.value})} />
-          <Button className="w-full" onClick={handleAdd} isLoading={adding}>Create Account</Button>
-          <p className="text-xs text-center mt-2 text-gray-400">User will appear in the list immediately.</p>
+          <div className="space-y-4">
+            <Input label="Full Name" value={newTeacher.name} onChange={(e:any) => setNewTeacher({...newTeacher, name: e.target.value})} placeholder="e.g. Tr. John Doe" />
+            <Input label="Email" type="email" value={newTeacher.email} onChange={(e:any) => setNewTeacher({...newTeacher, email: e.target.value})} placeholder="teacher@school.com" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Class (Optional)</label>
+                <select 
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
+                  value={newTeacher.assigned_class}
+                  onChange={(e) => setNewTeacher({...newTeacher, assigned_class: e.target.value})}
+                >
+                  <option value="">No Class Assigned</option>
+                  {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Subject (Optional)</label>
+                <select 
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
+                  value={newTeacher.assigned_subject}
+                  onChange={(e) => setNewTeacher({...newTeacher, assigned_subject: e.target.value})}
+                >
+                  <option value="">No Subject Assigned</option>
+                  {subjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <Button className="w-full h-12 mt-4" onClick={handleAdd} isLoading={adding}>Create Teacher Account</Button>
+            <p className="text-xs text-center text-gray-400">Default password is '123'. Teacher can change it later.</p>
+          </div>
         </Modal>
       )}
     </div>
