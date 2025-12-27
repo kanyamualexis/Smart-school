@@ -535,6 +535,18 @@ class DatabaseService {
           { id: 'tx_4', school: 'St. Mary\'s School', plan: 'Professional', amount: 130000, date: '2024-03-10', status: 'completed' },
       ];
   }
+
+  // --- GLOBAL BANNER ---
+
+  async getGlobalBanner(): Promise<{ message: string, active: boolean }> {
+    const stored = localStorage.getItem('ss_global_banner');
+    return stored ? JSON.parse(stored) : { message: '', active: false };
+  }
+
+  async updateGlobalBanner(data: { message: string, active: boolean }) {
+    localStorage.setItem('ss_global_banner', JSON.stringify(data));
+    window.dispatchEvent(new Event('global-banner-change'));
+  }
 }
 
 export const db = new DatabaseService();
