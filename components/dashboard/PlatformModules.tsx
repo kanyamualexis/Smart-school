@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, AuditLog, SchoolData, Announcement, Plan, Coupon } from '../../types';
 import { db } from '../../services/db';
@@ -9,7 +8,7 @@ import { formatCurrency } from '../../utils/formatters';
 import { 
   Users, Search, Shield, Trash2, Mail, CreditCard, CheckCircle, 
   Clock, Activity, AlertTriangle, Lock, Smartphone, Globe, Plus, Megaphone,
-  Tag, Edit3, Save, X, TicketPercent, TrendingUp, Layers, Calendar, RefreshCcw
+  Tag, Edit3, Save, X, TicketPercent, TrendingUp, Layers, Calendar, RefreshCcw, Copy, AlertCircle
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -91,6 +90,104 @@ export const PlatformUsers = () => {
 };
 
 // --- PLATFORM BILLING MODULE ---
+
+interface CouponCardProps {
+  coupon: Coupon;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const CouponCard: React.FC<CouponCardProps> = ({ coupon, onEdit, onDelete }) => {
+   const { theme, discount_value, discount_type, code, campaign_name } = coupon;
+   
+   // Theme configurations
+   const themes: any = {
+      'red_dawn': {
+         container: 'bg-white border-2 border-red-50',
+         left: 'bg-white text-gray-900',
+         right: 'bg-red-600 text-white',
+         textAccent: 'text-red-600',
+         badge: 'bg-black text-white',
+         pattern: 'radial-gradient(circle, #fecaca 1px, transparent 1px)'
+      },
+      'midnight_sale': {
+         container: 'bg-black border-2 border-gray-800',
+         left: 'bg-black text-white border-r border-dashed border-gray-700',
+         right: 'bg-white text-black',
+         textAccent: 'text-red-600',
+         badge: 'bg-red-600 text-white',
+         pattern: 'radial-gradient(circle, #e5e5e5 1px, transparent 1px)'
+      },
+      'royal_blue': {
+         container: 'bg-white border-2 border-blue-50',
+         left: 'bg-white text-gray-900',
+         right: 'bg-blue-600 text-white',
+         textAccent: 'text-blue-600',
+         badge: 'bg-orange-400 text-white',
+         pattern: 'radial-gradient(circle, #bfdbfe 1px, transparent 1px)'
+      },
+      'emerald_green': {
+         container: 'bg-emerald-50 border-2 border-emerald-100',
+         left: 'bg-emerald-50 text-emerald-900',
+         right: 'bg-emerald-600 text-white',
+         textAccent: 'text-emerald-700',
+         badge: 'bg-yellow-400 text-black',
+         pattern: 'radial-gradient(circle, #a7f3d0 1px, transparent 1px)'
+      }
+   };
+
+   const t = themes[theme || 'red_dawn'] || themes['red_dawn'];
+   const isModern = theme === 'midnight_sale';
+
+   return (
+      <div className={cn("relative rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex min-h-[160px] group", t.container)}>
+         {/* Action Buttons (Hidden by default, visible on hover) */}
+         <div className="absolute top-2 right-2 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={onEdit} className="p-1.5 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full text-white shadow-sm"><Edit3 size={14}/></button>
+            <button onClick={onDelete} className="p-1.5 bg-white/20 hover:bg-red-500/80 backdrop-blur-sm rounded-full text-white shadow-sm"><Trash2 size={14}/></button>
+         </div>
+
+         {/* Left Section: Main Info */}
+         <div 
+             className={cn("flex-1 p-6 flex flex-col justify-center relative", t.left)}
+             style={{ backgroundImage: isModern ? 'none' : t.pattern, backgroundSize: '12px 12px' }}
+         >
+            {!isModern && (
+               <div className="absolute top-0 right-0 bottom-0 w-4 overflow-hidden">
+                  <div className="w-8 h-full bg-transparent border-l-2 border-dashed border-gray-300/50"></div>
+               </div>
+            )}
+            
+            <div className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-1", isModern ? "text-gray-400" : "text-gray-400")}>
+               Discount
+            </div>
+            <div className={cn("text-5xl font-black leading-none mb-2 tracking-tighter", t.textAccent)}>
+               {discount_type === 'percent' ? `${discount_value}%` : formatCurrency(discount_value).split('.')[0]}
+               <span className="text-lg align-top ml-1">OFF</span>
+            </div>
+            <div className="text-xs font-bold opacity-60 uppercase tracking-widest truncate max-w-[180px]">
+               {campaign_name || 'Special Offer'}
+            </div>
+         </div>
+
+         {/* Right Section: Code Stub */}
+         <div className={cn("w-32 flex flex-col items-center justify-center relative p-2", t.right)}>
+             {/* Notches for ticket effect */}
+             <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 z-10"></div>
+             
+             <div className="h-full w-full border-2 border-white/20 rounded-lg flex flex-col items-center justify-center py-2 relative">
+                <div className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-2 vertical-rl" style={{ writingMode: 'vertical-rl' }}>
+                   COUPON CODE
+                </div>
+                <div className="bg-white text-black px-1 py-3 font-mono font-bold text-lg rounded tracking-wider shadow-sm w-full text-center rotate-90 whitespace-nowrap">
+                   {code}
+                </div>
+             </div>
+         </div>
+      </div>
+   );
+};
+
 export const PlatformBilling = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'coupons'>('overview');
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -104,7 +201,7 @@ export const PlatformBilling = () => {
   // Coupons State
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponModalOpen, setCouponModalOpen] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon>>({});
+  const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon>>({ theme: 'red_dawn' });
 
   // Confirmation State
   const [confirmDelete, setConfirmDelete] = useState<{open: boolean, type: 'plan' | 'coupon' | null, id: string | null}>({
@@ -185,13 +282,15 @@ export const PlatformBilling = () => {
       max_uses: editingCoupon.max_uses ? Number(editingCoupon.max_uses) : undefined,
       used_count: editingCoupon.used_count || 0,
       expires_at: editingCoupon.expires_at || undefined,
-      status: editingCoupon.status || 'active'
+      status: editingCoupon.status || 'active',
+      campaign_name: editingCoupon.campaign_name || '',
+      theme: editingCoupon.theme as any || 'red_dawn'
     };
 
     await db.saveCoupon(couponToSave);
     await fetchCoupons();
     setCouponModalOpen(false);
-    setEditingCoupon({});
+    setEditingCoupon({ theme: 'red_dawn' });
   };
 
   return (
@@ -331,63 +430,33 @@ export const PlatformBilling = () => {
        {activeTab === 'coupons' && (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                   <h3 className="font-bold text-gray-900 text-lg">Coupon Management</h3>
-                   <Button onClick={() => { setEditingCoupon({}); setCouponModalOpen(true); }}><Plus size={16}/> Create Coupon</Button>
+                <div className="flex justify-between items-center mb-8">
+                   <div>
+                      <h3 className="font-bold text-gray-900 text-xl leading-tight">Campaigns & Coupons</h3>
+                      <p className="text-sm text-gray-500 mt-1">Manage discount codes and promotional events</p>
+                   </div>
+                   <Button onClick={() => { setEditingCoupon({ theme: 'red_dawn' }); setCouponModalOpen(true); }} size="lg" className="shadow-lg shadow-brand-100">
+                      <Plus size={18}/> Create Campaign
+                   </Button>
                 </div>
                 
-                <table className="w-full text-left">
-                   <thead className="bg-gray-50 text-gray-500 border-b">
-                      <tr className="text-xs font-black uppercase tracking-widest">
-                         <th className="p-4">Code</th>
-                         <th className="p-4">Discount</th>
-                         <th className="p-4">Usage</th>
-                         <th className="p-4">Expires</th>
-                         <th className="p-4">Status</th>
-                         <th className="p-4 text-right">Actions</th>
-                      </tr>
-                   </thead>
-                   <tbody className="divide-y text-sm">
-                      {coupons.map(coupon => {
-                         const isExpired = coupon.expires_at ? new Date(coupon.expires_at) < new Date() : false;
-                         const isLimitReached = coupon.max_uses ? coupon.used_count >= coupon.max_uses : false;
-                         return (
-                            <tr key={coupon.id} className="hover:bg-gray-50">
-                               <td className="p-4">
-                                  <div className="flex items-center gap-2">
-                                     <Tag size={16} className="text-brand-600"/>
-                                     <span className="font-bold text-gray-900">{coupon.code}</span>
-                                  </div>
-                               </td>
-                               <td className="p-4 font-bold text-green-600">
-                                  {coupon.discount_type === 'percent' ? `${coupon.discount_value}% OFF` : formatCurrency(coupon.discount_value)}
-                               </td>
-                               <td className="p-4 text-gray-600">
-                                  {coupon.used_count} / {coupon.max_uses || '∞'}
-                               </td>
-                               <td className="p-4 text-gray-500 font-mono text-xs">
-                                  {coupon.expires_at || 'Never'}
-                               </td>
-                               <td className="p-4">
-                                  {isExpired ? (
-                                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold uppercase">Expired</span>
-                                  ) : isLimitReached ? (
-                                      <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold uppercase">Maxed</span>
-                                  ) : (
-                                      <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase">Active</span>
-                                  )}
-                               </td>
-                               <td className="p-4 text-right">
-                                  <div className="flex justify-end gap-2">
-                                     <button onClick={() => { setEditingCoupon(coupon); setCouponModalOpen(true); }} className="p-2 text-gray-400 hover:text-brand-600 rounded hover:bg-brand-50"><Edit3 size={16}/></button>
-                                     <button onClick={() => triggerDeleteCoupon(coupon.id)} className="p-2 text-gray-400 hover:text-red-600 rounded hover:bg-red-50"><Trash2 size={16}/></button>
-                                  </div>
-                               </td>
-                            </tr>
-                         );
-                      })}
-                   </tbody>
-                </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                   {coupons.map(coupon => (
+                      <CouponCard 
+                        key={coupon.id} 
+                        coupon={coupon} 
+                        onEdit={() => { setEditingCoupon(coupon); setCouponModalOpen(true); }}
+                        onDelete={() => triggerDeleteCoupon(coupon.id)}
+                      />
+                   ))}
+                   {coupons.length === 0 && (
+                      <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50">
+                         <TicketPercent className="mx-auto text-gray-300 mb-4" size={48} />
+                         <p className="text-gray-400 font-bold">No active coupons found.</p>
+                         <p className="text-xs text-gray-400 mt-1">Create a new campaign to get started.</p>
+                      </div>
+                   )}
+                </div>
              </div>
           </div>
        )}
@@ -451,29 +520,42 @@ export const PlatformBilling = () => {
        )}
 
        {couponModalOpen && (
-          <Modal title={editingCoupon.id ? "Edit Coupon" : "Create Coupon"} onClose={() => setCouponModalOpen(false)}>
+          <Modal title={editingCoupon.id ? "Edit Campaign" : "New Campaign"} onClose={() => setCouponModalOpen(false)}>
              <div className="space-y-4">
-                <Input label="Coupon Code" placeholder="e.g. SUMMER2025" value={editingCoupon.code || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, code: e.target.value})} />
+                <Input label="Campaign Name" placeholder="e.g. End of Year Sale" value={editingCoupon.campaign_name || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, campaign_name: e.target.value})} />
+                
+                <div className="grid grid-cols-2 gap-4">
+                   <Input label="Coupon Code" placeholder="SALE2024" value={editingCoupon.code || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, code: e.target.value})} className="font-mono uppercase" />
+                   <div>
+                       <label className="block text-sm font-bold text-gray-700 mb-1">Visual Theme</label>
+                       <select className="w-full p-3 border rounded-lg bg-gray-50 text-sm" value={editingCoupon.theme || 'red_dawn'} onChange={e => setEditingCoupon({...editingCoupon, theme: e.target.value as any})}>
+                          <option value="red_dawn">Red Dawn (White/Red)</option>
+                          <option value="midnight_sale">Midnight Sale (Black/Red)</option>
+                          <option value="royal_blue">Royal Blue (White/Blue)</option>
+                          <option value="emerald_green">Emerald Green (Green/White)</option>
+                       </select>
+                   </div>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                    <div>
-                       <label className="block text-sm font-bold text-gray-700 mb-1">Type</label>
+                       <label className="block text-sm font-bold text-gray-700 mb-1">Discount Type</label>
                        <select className="w-full p-3 border rounded-lg bg-gray-50 text-sm" value={editingCoupon.discount_type || 'percent'} onChange={e => setEditingCoupon({...editingCoupon, discount_type: e.target.value as any})}>
                           <option value="percent">Percentage (%)</option>
                           <option value="fixed">Fixed Amount</option>
                        </select>
                    </div>
-                   <Input label="Value" type="number" placeholder={editingCoupon.discount_type === 'fixed' ? 'Amount' : 'Percentage'} value={editingCoupon.discount_value || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, discount_value: e.target.value})} />
+                   <Input label="Value" type="number" placeholder="50" value={editingCoupon.discount_value || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, discount_value: e.target.value})} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                    <Input label="Max Uses (Optional)" type="number" placeholder="Unlimited" value={editingCoupon.max_uses || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, max_uses: e.target.value})} />
-                   <Input label="Expires At (Optional)" type="date" value={editingCoupon.expires_at || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, expires_at: e.target.value})} />
+                   <Input label="Expiry Date" type="date" value={editingCoupon.expires_at || ''} onChange={(e:any) => setEditingCoupon({...editingCoupon, expires_at: e.target.value})} />
                 </div>
 
                 <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
                     <Button variant="secondary" className="flex-1 border-gray-300" onClick={() => setCouponModalOpen(false)}>Cancel</Button>
-                    <Button className="flex-1" onClick={handleSaveCoupon}>Save Coupon</Button>
+                    <Button className="flex-1" onClick={handleSaveCoupon}>Publish Campaign</Button>
                 </div>
              </div>
           </Modal>

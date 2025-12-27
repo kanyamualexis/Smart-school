@@ -140,4 +140,6 @@ export interface Coupon {
   used_count: number;
   expires_at?: string;
   status: 'active' | 'expired' | 'disabled';
+  campaign_name?: string;
+  theme?: 'red_dawn' | 'midnight_sale' | 'royal_blue' | 'emerald_green';
 }

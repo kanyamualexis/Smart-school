@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, AuditLog, TimetableEntry, Plan, Coupon } from '../types';
+import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, AuditLog, TimetableEntry, Plan, Coupon, Attendance } from '../types';
 
 class DatabaseService {
   // --- AUTHENTICATION ---
@@ -418,6 +418,39 @@ class DatabaseService {
     if (error) throw error;
   }
 
+  // --- ATTENDANCE ---
+
+  async getAttendance(schoolId: string, date: string): Promise<Attendance[]> {
+    if (schoolId === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_attendance');
+        if (!stored) return [];
+        const all: Attendance[] = JSON.parse(stored);
+        return all.filter(a => a.school_id === schoolId && a.date === date);
+    }
+    const { data } = await supabase.from('attendance').select('*').eq('school_id', schoolId).eq('date', date);
+    return data || [];
+  }
+
+  async saveAttendance(records: Attendance[]) {
+    if (records.length === 0) return;
+    const schoolId = records[0].school_id;
+    if (schoolId === 'demo_school_001') {
+        const stored = localStorage.getItem('ss_mock_attendance');
+        let all: Attendance[] = stored ? JSON.parse(stored) : [];
+        
+        records.forEach(r => {
+            const idx = all.findIndex(a => a.student_id === r.student_id && a.date === r.date);
+            if (idx >= 0) all[idx] = r;
+            else all.push(r);
+        });
+        
+        localStorage.setItem('ss_mock_attendance', JSON.stringify(all));
+        return;
+    }
+    const { error } = await supabase.from('attendance').upsert(records);
+    if (error) throw error;
+  }
+
   // --- BILLING: PLANS & COUPONS (Admin Mock) ---
   
   async getPlans(): Promise<Plan[]> {
@@ -457,8 +490,9 @@ class DatabaseService {
     
     // Default Coupons
     const defaults: Coupon[] = [
-      { id: 'c1', code: 'WELCOME20', discount_type: 'percent', discount_value: 20, max_uses: 100, used_count: 45, status: 'active' },
-      { id: 'c2', code: 'SCHOOL50', discount_type: 'percent', discount_value: 50, max_uses: 50, used_count: 12, status: 'active', expires_at: '2025-12-31' },
+      { id: 'c1', code: 'WELCOME20', discount_type: 'percent', discount_value: 20, max_uses: 100, used_count: 45, status: 'active', campaign_name: 'New School Promo', theme: 'royal_blue' },
+      { id: 'c2', code: 'BLACKFRIDAY', discount_type: 'percent', discount_value: 50, max_uses: 500, used_count: 12, status: 'active', expires_at: '2025-11-30', campaign_name: 'Black Friday Super Sale', theme: 'midnight_sale' },
+      { id: 'c3', code: 'XMAS50', discount_type: 'fixed', discount_value: 50000, max_uses: 50, used_count: 5, status: 'active', expires_at: '2025-12-25', campaign_name: 'Christmas Gift', theme: 'red_dawn' },
     ];
     localStorage.setItem('ss_mock_coupons', JSON.stringify(defaults));
     return defaults;

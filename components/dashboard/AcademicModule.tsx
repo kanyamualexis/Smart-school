@@ -6,8 +6,9 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 import { db } from '../../services/db';
-import { User, Subject, TimetableEntry, ClassGrade } from '../../types';
-import { BookOpen, Calendar, FileText, Plus, Clock } from 'lucide-react';
+import { User, Subject, TimetableEntry, ClassGrade, Student, Attendance } from '../../types';
+import { BookOpen, Calendar, FileText, Plus, Clock, CheckCircle, XCircle, AlertCircle, Save, Loader2 } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 export const AcademicModule = ({ user, section }: { user: User, section: string }) => {
   if (section === 'assessments') return <AssessmentSection user={user} />;
@@ -219,49 +220,188 @@ const AssessmentSection = ({ user }: { user: User }) => {
 };
 
 const AttendanceSection = ({ user }: { user: User }) => {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [classes, setClasses] = useState<ClassGrade[]>([]);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, 'present' | 'absent' | 'late'>>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load classes on mount
+  useEffect(() => {
+    db.getClasses(user.school_id).then((cls) => {
+        setClasses(cls);
+        if (cls.length > 0) setSelectedClass(cls[0].name);
+    });
+  }, [user.school_id]);
+
+  // Load students and attendance
+  useEffect(() => {
+    if (!selectedClass) return;
+    
+    const fetchData = async () => {
+        setLoading(true);
+        // 1. Get students for class
+        const sts = await db.getStudents(user.school_id, selectedClass);
+        setStudents(sts);
+        
+        // 2. Get attendance for date
+        const atts = await db.getAttendance(user.school_id, date); // Returns all for school/date
+        
+        // 3. Map status
+        const map: any = {};
+        sts.forEach(s => {
+            const record = atts.find(a => a.student_id === s.id);
+            map[s.id] = record ? record.status : 'present'; // Default to present
+        });
+        setAttendanceMap(map);
+        setLoading(false);
+    }
+    fetchData();
+  }, [selectedClass, date, user.school_id]);
+
+  const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late') => {
+      setAttendanceMap(prev => ({...prev, [studentId]: status}));
+  };
+  
+  const handleSave = async () => {
+      setSaving(true);
+      const recordsToSave = students.map(s => ({
+          id: `att_${s.id}_${date}`, 
+          student_id: s.id,
+          date,
+          status: attendanceMap[s.id] || 'present',
+          school_id: user.school_id
+      }));
+
+      await db.saveAttendance(recordsToSave as Attendance[]);
+      setSaving(false);
+  };
+
+  // Stats
+  const presentCount = Object.values(attendanceMap).filter(s => s === 'present').length;
+  const absentCount = Object.values(attendanceMap).filter(s => s === 'absent').length;
+  const lateCount = Object.values(attendanceMap).filter(s => s === 'late').length;
+
   return (
-    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
-       <div className="flex justify-between items-center mb-8">
-          <h3 className="text-xl font-bold text-gray-900">Daily Attendance</h3>
-          <div className="flex gap-2">
-             <input type="date" className="p-2 border rounded-lg text-sm bg-gray-50" />
-             <Button size="sm">Load</Button>
+    <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm animate-in fade-in">
+       {/* Header */}
+       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+             <h3 className="text-xl font-bold text-gray-900 leading-none mb-1">Daily Attendance</h3>
+             <p className="text-sm text-gray-500 font-medium">Manage student presence records</p>
+          </div>
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+             <select 
+                className="p-3 border rounded-xl text-sm font-bold bg-gray-50 outline-none flex-1 md:flex-none min-w-[150px]"
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+             >
+                {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+             </select>
+             <input 
+                type="date" 
+                className="p-3 border rounded-xl text-sm bg-gray-50 outline-none font-medium flex-1 md:flex-none" 
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+             />
+             <Button onClick={handleSave} disabled={saving} className="md:w-32 flex-1 md:flex-none">
+                 {saving ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} className="mr-2"/> Save</>}
+             </Button>
           </div>
        </div>
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 bg-green-50 text-green-700 rounded-xl text-center">
-             <div className="text-2xl font-black">850</div>
-             <div className="text-[10px] font-bold uppercase tracking-widest">Present</div>
+
+       {/* Summary Cards */}
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="p-5 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-between border border-emerald-100">
+             <div>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Present</div>
+                <div className="text-3xl font-black">{presentCount}</div>
+             </div>
+             <CheckCircle size={32} className="opacity-20" />
           </div>
-          <div className="p-4 bg-red-50 text-red-700 rounded-xl text-center">
-             <div className="text-2xl font-black">12</div>
-             <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
+          <div className="p-5 bg-red-50 text-red-700 rounded-2xl flex items-center justify-between border border-red-100">
+             <div>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Absent</div>
+                <div className="text-3xl font-black">{absentCount}</div>
+             </div>
+             <XCircle size={32} className="opacity-20" />
           </div>
-          <div className="p-4 bg-orange-50 text-orange-700 rounded-xl text-center">
-             <div className="text-2xl font-black">5</div>
-             <div className="text-[10px] font-bold uppercase tracking-widest">Late</div>
+          <div className="p-5 bg-amber-50 text-amber-700 rounded-2xl flex items-center justify-between border border-amber-100">
+             <div>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Late</div>
+                <div className="text-3xl font-black">{lateCount}</div>
+             </div>
+             <Clock size={32} className="opacity-20" />
           </div>
        </div>
-       <div className="border rounded-xl overflow-x-auto">
-          <table className="w-full text-sm text-left whitespace-nowrap">
-             <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-[10px] tracking-widest">
-                <tr><th className="p-4">Student</th><th className="p-4">Class</th><th className="p-4">Status</th><th className="p-4">Time In</th></tr>
-             </thead>
-             <tbody className="divide-y">
-                <tr>
-                   <td className="p-4 font-bold text-gray-900">Bart Simpson</td>
-                   <td className="p-4 text-gray-500">P4</td>
-                   <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">Present</span></td>
-                   <td className="p-4 text-gray-500">07:45 AM</td>
-                </tr>
-                <tr>
-                   <td className="p-4 font-bold text-gray-900">Lisa Simpson</td>
-                   <td className="p-4 text-gray-500">P4</td>
-                   <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">Present</span></td>
-                   <td className="p-4 text-gray-500">07:40 AM</td>
-                </tr>
-             </tbody>
-          </table>
+
+       {/* List */}
+       <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          {loading ? (
+             <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-brand-600"/></div>
+          ) : students.length === 0 ? (
+             <div className="p-12 text-center text-gray-400">No students found in {selectedClass}.</div>
+          ) : (
+             <table className="w-full text-left">
+                <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-[10px] tracking-widest">
+                   <tr>
+                      <th className="p-4">Student Name</th>
+                      <th className="p-4 hidden md:table-cell">Index No.</th>
+                      <th className="p-4 text-center">Status</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 text-sm">
+                   {students.map(student => {
+                      const status = attendanceMap[student.id] || 'present';
+                      return (
+                         <tr key={student.id} className="hover:bg-gray-50/50">
+                            <td className="p-4 font-bold text-gray-900">{student.full_name}</td>
+                            <td className="p-4 text-gray-500 hidden md:table-cell">{student.index_number}</td>
+                            <td className="p-4">
+                               <div className="flex justify-center gap-2">
+                                  <button 
+                                     onClick={() => handleStatusChange(student.id, 'present')}
+                                     className={cn(
+                                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                                        status === 'present' 
+                                            ? "bg-emerald-500 text-white shadow-md shadow-emerald-200" 
+                                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                     )}
+                                  >
+                                     <CheckCircle size={14}/> Present
+                                  </button>
+                                  <button 
+                                     onClick={() => handleStatusChange(student.id, 'absent')}
+                                     className={cn(
+                                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                                        status === 'absent' 
+                                            ? "bg-red-500 text-white shadow-md shadow-red-200" 
+                                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                     )}
+                                  >
+                                     <XCircle size={14}/> Absent
+                                  </button>
+                                  <button 
+                                     onClick={() => handleStatusChange(student.id, 'late')}
+                                     className={cn(
+                                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                                        status === 'late' 
+                                            ? "bg-amber-500 text-white shadow-md shadow-amber-200" 
+                                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                     )}
+                                  >
+                                     <Clock size={14}/> Late
+                                  </button>
+                               </div>
+                            </td>
+                         </tr>
+                      );
+                   })}
+                </tbody>
+             </table>
+          )}
        </div>
     </div>
   );

@@ -52,6 +52,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [school, setSchool] = useState<SchoolData | null>(null);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (user.school_id) {
@@ -62,13 +63,16 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   // Determine Brand Color
   const brandColor = school?.theme_color || '#2563eb'; // Default to blue-600
 
-  // Logout Handler with Confirmation
-  const handleLogout = async () => {
-    if (window.confirm("Are you sure you want to log out of the system?")) {
-      await db.logout();
-      setUser(null);
-      setView('landing');
-    }
+  const handleLogoutClick = () => {
+    setLogoutConfirmOpen(true);
+    setProfileOpen(false); // Close profile dropdown if open
+  };
+
+  const handleLogoutConfirm = async () => {
+    await db.logout();
+    setUser(null);
+    setView('landing');
+    setLogoutConfirmOpen(false);
   };
 
   const menu = useMemo(() => {
@@ -193,7 +197,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
             </div>
              <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0 mt-auto">
                <button 
-                 onClick={handleLogout} 
+                 onClick={handleLogoutClick} 
                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-xs font-bold uppercase tracking-widest text-slate-400 justify-center"
                >
                  <LogOut size={18} />
@@ -272,7 +276,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
 
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0">
            <button 
-             onClick={handleLogout} 
+             onClick={handleLogoutClick} 
              className={cn("w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-xs font-bold uppercase tracking-widest text-slate-400", isSidebarCollapsed ? "justify-center" : "px-4")}
            >
              <LogOut size={18} />
@@ -341,7 +345,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
                       <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"><UserCircle size={16}/> Profile</button>
                       <button onClick={() => { setActiveTab('settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"><Settings size={16}/> Settings</button>
                       <div className="h-px bg-gray-50 my-1"></div>
-                      <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
+                      <button onClick={handleLogoutClick} className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
                    </div>
                  )}
               </div>
@@ -353,6 +357,25 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
            {renderContent()}
         </main>
       </div>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {logoutConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 border-2 border-gray-100 relative">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <LogOut className="text-red-500" size={32} />
+                </div>
+                <h3 className="text-xl font-black text-center text-gray-900 mb-2">Sign Out</h3>
+                <p className="text-center text-gray-500 text-sm mb-8">
+                  Are you sure you want to log out? You will need to sign in again to access your account.
+                </p>
+                <div className="flex gap-3">
+                  <Button variant="secondary" className="flex-1 border-gray-300" onClick={() => setLogoutConfirmOpen(false)}>Cancel</Button>
+                  <Button variant="danger" className="flex-1 shadow-red-200 shadow-lg" onClick={handleLogoutConfirm}>Log Out</Button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
