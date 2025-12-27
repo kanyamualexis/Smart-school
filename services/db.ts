@@ -6,6 +6,20 @@ class DatabaseService {
   // --- AUTHENTICATION ---
 
   async login(email: string, pass: string): Promise<{ user: User | null, error: string | null }> {
+    // 1. Hardcoded Admin Access (Bypass Supabase for Demo/Testing)
+    if (email === 'admin@smartschoolflow.com' && pass === 'admin123') {
+       const adminUser: User = {
+           id: 'mock_platform_admin_id',
+           email: email,
+           full_name: 'Platform Admin',
+           role: 'platform_admin',
+           school_id: 'platform_001'
+       };
+       // Persist mock session
+       localStorage.setItem('ss_mock_admin', JSON.stringify(adminUser));
+       return { user: adminUser, error: null };
+    }
+
     try {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -22,18 +36,7 @@ class DatabaseService {
         .single();
 
       if (profileError) {
-         if (email === 'admin@smartschoolflow.com') {
-             return {
-                 user: {
-                     id: authData.user.id,
-                     email: email,
-                     full_name: 'Platform Admin',
-                     role: 'platform_admin',
-                     school_id: ''
-                 },
-                 error: null
-             };
-         }
+         // Fallback if user is in Auth but not in public.users table (Rare case)
          return { user: null, error: "User profile not found. Please contact support." };
       }
 
@@ -98,10 +101,18 @@ class DatabaseService {
   }
 
   async logout() {
+    localStorage.removeItem('ss_mock_admin');
     await supabase.auth.signOut();
   }
 
   async getCurrentUser(): Promise<User | null> {
+    // 1. Check Mock Session first
+    const mock = localStorage.getItem('ss_mock_admin');
+    if (mock) {
+        return JSON.parse(mock) as User;
+    }
+
+    // 2. Check Real Supabase Session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return null;
 
@@ -111,16 +122,6 @@ class DatabaseService {
       .eq('id', session.user.id)
       .single();
     
-    if (!data && session.user.email === 'admin@smartschoolflow.com') {
-         return {
-             id: session.user.id,
-             email: session.user.email,
-             full_name: 'Platform Admin',
-             role: 'platform_admin',
-             school_id: ''
-         };
-    }
-
     return data as User;
   }
 
@@ -137,6 +138,9 @@ class DatabaseService {
   }
   
   async getSchool(id: string): Promise<SchoolData | null> {
+     // Mock return for platform admin viewing the platform itself
+     if (id === 'platform_001') return { id: 'platform', name: 'Platform Administration', district: 'Headquarters', plan: 'enterprise', has_nursery: false, status: 'active' };
+
      const { data, error } = await supabase.from('schools').select('*').eq('id', id).single();
      if (error) console.error(error);
      return data;
