@@ -5,7 +5,7 @@ import {
   Calendar, Settings, Users, CreditCard, LayoutDashboard, 
   Building2, Layers, Bot, Search, Plus, Menu, 
   ChevronDown, Bell, ShieldCheck, ClipboardCheck, 
-  FileText, Megaphone, UserCircle
+  FileText, Megaphone, UserCircle, Activity, Lock
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Overview } from '../components/dashboard/Overview';
@@ -31,15 +31,24 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   }, [user.school_id]);
 
   const menu = useMemo(() => {
-    // Platform Admin Menu
+    // Professional Platform Admin Menu
     if(user.role === 'platform_admin') return [
-      { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
-      { id: 'schools', icon: Building2, label: 'Schools' },
-      { id: 'pricing', icon: Layers, label: 'Plans' },
-      { id: 'users', icon: Users, label: 'Global Users' }
+      { section: 'Platform' },
+      { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
+      { id: 'schools', icon: Building2, label: 'Schools Management' },
+      { id: 'users', icon: Users, label: 'Platform Users' },
+      { id: 'plans', icon: CreditCard, label: 'Plans & Billing' },
+      
+      { section: 'Insights' },
+      { id: 'analytics', icon: BarChart3, label: 'Analytics & Reports' },
+      { id: 'audit', icon: Activity, label: 'Audit Logs' },
+      
+      { section: 'System' },
+      { id: 'announcements', icon: Megaphone, label: 'Announcements' },
+      { id: 'security', icon: Lock, label: 'Security & Settings' },
     ];
 
-    // Enterprise School Admin Menu (Requested Structure)
+    // Enterprise School Admin Menu
     if(user.role === 'school_admin') return [
       { section: 'Main' },
       { id: 'overview', icon: LayoutDashboard, label: 'Dashboard Overview' },
@@ -69,14 +78,31 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
   }, [user.role]);
 
   const renderContent = () => {
-    // Platform Admin
+    // Platform Admin Content Routing
     if (user.role === 'platform_admin') {
       if (activeTab === 'overview') return <PlatformOverview />;
       if (activeTab === 'schools') return <SchoolsManagement />;
-      return <div className="p-20 text-center text-gray-400">Module under development</div>;
+      
+      // Placeholders for other platform modules to demonstrate sidebar connectivity
+      if (activeTab === 'analytics') return (
+         <div className="p-12 text-center">
+            <BarChart3 size={64} className="mx-auto text-brand-200 mb-6" />
+            <h3 className="text-xl font-bold text-gray-900">Advanced Analytics</h3>
+            <p className="text-gray-500">System-wide performance metrics and growth charts.</p>
+         </div>
+      );
+      if (activeTab === 'audit') return (
+         <div className="p-12 text-center">
+            <Activity size={64} className="mx-auto text-brand-200 mb-6" />
+            <h3 className="text-xl font-bold text-gray-900">System Audit Logs</h3>
+            <p className="text-gray-500">Track all admin actions for security and compliance.</p>
+         </div>
+      );
+
+      return <div className="p-20 text-center text-gray-400">Module {activeTab} is under development.</div>;
     }
 
-    // School Admin & Teacher
+    // School Admin & Teacher Content Routing
     switch (activeTab) {
       case 'overview': return <Overview user={user} />;
       
@@ -199,7 +225,7 @@ export const DashboardPage = ({ user, setUser, setView }: { user: User, setUser:
            <div className="flex items-center gap-6">
               <div className="hidden md:flex items-center bg-gray-50 rounded-full px-4 py-2.5 border border-gray-100 focus-within:ring-2 focus-within:ring-brand-100 focus-within:border-brand-300 transition-all w-64">
                  <Search size={16} className="text-gray-400 mr-3" />
-                 <input className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-gray-400" placeholder="Search anything..." />
+                 <input className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-gray-400" placeholder="Search..." />
               </div>
 
               <button className="relative p-2.5 rounded-full hover:bg-gray-50 text-gray-400 hover:text-brand-600 transition-colors">

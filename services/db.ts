@@ -1,5 +1,6 @@
+
 import { supabase } from './supabase';
-import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, Attendance } from '../types';
+import { SchoolData, User, Student, Mark, Role, ClassGrade, Parent, Subject, Material, Announcement, Attendance, AuditLog } from '../types';
 
 class DatabaseService {
   // --- AUTHENTICATION ---
@@ -44,8 +45,6 @@ class DatabaseService {
 
   async registerSchool(data: { name: string, district: string, phone: string, address: string, plan: any, email: string, pass: string, hasNursery: boolean, adminName?: string }): Promise<{ success: boolean, error?: string }> {
     try {
-      // Temporary workaround: Combine contact details into district field 
-      // because 'address' and 'phone' columns do not exist in the current database schema
       const compositeDistrict = `${data.district} | ${data.phone} | ${data.address}`;
 
       const { data: school, error: schoolError } = await supabase
@@ -62,6 +61,7 @@ class DatabaseService {
 
       if (schoolError) throw new Error(`School creation failed: ${schoolError.message}`);
 
+      // Create the Auth User
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.pass,
@@ -78,6 +78,16 @@ class DatabaseService {
         await supabase.from('schools').delete().eq('id', school.id);
         throw new Error(`User account creation failed: ${authError.message}`);
       }
+
+      // Also insert into public.users for easier querying in this demo
+      // In production, use a Trigger on auth.users
+      await supabase.from('users').insert({
+          id: authData.user?.id,
+          email: data.email,
+          full_name: data.adminName || 'School Admin',
+          role: 'school_admin',
+          school_id: school.id
+      });
 
       return { success: true };
 
@@ -135,21 +145,27 @@ class DatabaseService {
   async updateSchool(id: string, data: Partial<SchoolData>) {
     const { error } = await supabase.from('schools').update(data).eq('id', id);
     if (error) throw error;
+    // Mock email notification
+    if (data.status) {
+        console.log(`[EMAIL SERVICE] Sending ${data.status} notification to school ID ${id}`);
+    }
   }
 
   async getUsers(schoolId: string, role?: Role): Promise<User[]> { 
-    let query = supabase.from('users').select('*').eq('school_id', schoolId);
+    let query = supabase.from('users').select('*');
+    if (schoolId) query = query.eq('school_id', schoolId);
     if (role) query = query.eq('role', role);
     const { data, error } = await query;
     if (error) console.error(error);
     return data || [];
   }
 
+  async getAllUsers(): Promise<User[]> {
+      const { data } = await supabase.from('users').select('*');
+      return data || [];
+  }
+
   async addUser(u: Partial<User>) {
-    // Note: In a real app, adding a user usually triggers an Auth Invite.
-    // Here we insert directly into public.users to ensure the School Admin sees them in the dashboard.
-    // The user won't be able to login unless an Auth account matches this ID or email.
-    // Ideally, this uses an Edge Function to create the Auth user securely.
     const { error } = await supabase.from('users').insert(u);
     if (error) throw error;
   }
@@ -211,7 +227,6 @@ class DatabaseService {
   }
 
   async checkResult(schoolId: string, indexNumber: string) {
-    // 1. Find Student
     const { data: student } = await supabase.from('students')
       .select('*')
       .eq('school_id', schoolId)
@@ -220,10 +235,8 @@ class DatabaseService {
     
     if (!student) return null;
 
-    // 2. Get School
     const { data: school } = await supabase.from('schools').select('*').eq('id', schoolId).single();
 
-    // 3. Get Marks
     const { data: marks } = await supabase.from('marks')
       .select('*')
       .eq('student_id', student.id);
@@ -239,6 +252,16 @@ class DatabaseService {
   async getAnnouncements(schoolId: string): Promise<Announcement[]> { 
     const { data } = await supabase.from('announcements').select('*').eq('school_id', schoolId);
     return data || [];
+  }
+
+  // --- PLATFORM ADMIN SPECIFIC ---
+  async getAuditLogs(): Promise<AuditLog[]> {
+      // Mock data for audit logs as table might not exist in Supabase yet
+      return [
+          { id: '1', action: 'SCHOOL_APPROVAL', details: 'Approved Green Valley High', date: new Date().toISOString(), user: 'Platform Admin' },
+          { id: '2', action: 'LOGIN', details: 'Admin login detected', date: new Date(Date.now() - 86400000).toISOString(), user: 'Platform Admin' },
+          { id: '3', action: 'PLAN_UPDATE', details: 'Updated pricing for Enterprise', date: new Date(Date.now() - 172800000).toISOString(), user: 'Platform Admin' },
+      ];
   }
 }
 

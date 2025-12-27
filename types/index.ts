@@ -1,6 +1,6 @@
 
 export type Role = 'platform_admin' | 'school_admin' | 'teacher' | 'student' | 'parent';
-export type SchoolStatus = 'active' | 'pending' | 'rejected';
+export type SchoolStatus = 'active' | 'pending' | 'rejected' | 'suspended';
 
 export interface SchoolData {
   id: string;
@@ -14,6 +14,7 @@ export interface SchoolData {
   status?: SchoolStatus;
   created_at?: string;
   academic_year?: string;
+  admin_email?: string; // For display in pending table
 }
 
 export interface User {
@@ -95,4 +96,12 @@ export interface Announcement {
   school_id: string;
   target_role: 'all' | 'teachers' | 'parents';
   date: string;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  details: string;
+  date: string;
+  user: string;
 }
